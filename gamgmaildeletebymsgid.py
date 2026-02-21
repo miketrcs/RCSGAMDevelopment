@@ -2,7 +2,8 @@
 """JMT 02/21/2026
 
 Reads a CSV export of Gmail accounts and RFC822 message IDs, then deletes
-matching messages via GAM. Dry run is the default; use -x to execute deletes.
+matching messages via GAM. Preview is the default; use -c to check first 10
+valid rows without delete, or -x to execute deletes.
 """
 
 import argparse
@@ -49,12 +50,28 @@ def main() -> int:
         action="store_true",
         help="Disable dry run and delete matching emails.",
     )
+    parser.add_argument(
+        "-c",
+        "--check",
+        action="store_true",
+        help="Call GAM in check mode for first 10 valid rows (no 'doit', no delete).",
+    )
     if len(sys.argv) == 1:
         parser.print_help()
         return 1
 
     args = parser.parse_args()
-    dry_run = not args.execute
+    if args.execute and args.check:
+        print("[ERR] choose only one: -c/--check or -x/--execute")
+        return 1
+
+    mode = "preview"
+    if args.check:
+        mode = "check"
+    elif args.execute:
+        mode = "execute"
+
+    dry_run = mode == "preview"
     csv_path = Path(args.csv_file).expanduser()
 
     if not csv_path.exists():
@@ -62,6 +79,7 @@ def main() -> int:
         return 1
 
     total = 0
+    valid = 0
     ran = 0
     miss = 0
     errs = 0
@@ -76,6 +94,10 @@ def main() -> int:
             if not user or not msgid:
                 continue
 
+            valid += 1
+            if mode == "check" and valid > 10:
+                continue
+
             cmd = [
                 GAM,
                 "user",
@@ -84,13 +106,15 @@ def main() -> int:
                 "messages",
                 "query",
                 f"rfc822msgid:{msgid}",
-                "doit",
             ]
 
             if dry_run:
                 ran += 1
                 print(f"[DRY-RUN] user={user} msgid={msgid} cmd={' '.join(cmd)}")
                 continue
+
+            if mode == "execute":
+                cmd.append("doit")
 
             try:
                 proc = subprocess.run(cmd, capture_output=True, text=True)
@@ -109,6 +133,8 @@ def main() -> int:
                 ):
                     miss += 1
                     print(f"[MISS] user={user} msgid={msgid}")
+                elif mode == "check":
+                    print(f"[CHECK] user={user} msgid={msgid}")
                 else:
                     print(f"[OK] user={user} msgid={msgid}")
             except Exception as exc:
@@ -117,7 +143,7 @@ def main() -> int:
 
     print(
         f"\\nDone. rows={total} ran={ran} miss={miss} errors={errs} "
-        f"(current_user={CURRENT_USER or 'unknown'} dry_run={dry_run})"
+        f"(current_user={CURRENT_USER or 'unknown'} mode={mode})"
     )
     return 0
 
