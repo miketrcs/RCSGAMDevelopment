@@ -14,6 +14,15 @@ Delete Gmail messages by `Rfc822MessageId` from a CSV export using GAM.
   - `Account`
   - `Rfc822MessageId`
 
+## Versioning
+- Shared version source: `VERSION`
+- Current version: `1.0.0`
+- Release date: `2026-02-21`
+- `gamgmaildeletebymsgid.py`: `1.0.0` (2026-02-21)
+- `gamgmaildeletebymsgidparallel.py`: `1.0.0` (2026-02-21)
+
+Track versions with git tags that match `VERSION` (example: `v1.0.0`).
+
 ## Preview Mode (Default)
 ```bash
 python3 gamgmaildeletebymsgid.py -f /path/to/export-metadata.csv

@@ -20,6 +20,12 @@ from pathlib import Path
 CURRENT_USER = os.environ.get("USER") or os.environ.get("LOGNAME") or ""
 HOME_DIR = Path.home()
 GAM = os.environ.get("GAM_PATH", str(HOME_DIR / "bin" / "gam7" / "gam"))
+VERSION = (
+    Path(__file__).with_name("VERSION").read_text(encoding="utf-8").strip()
+    if Path(__file__).with_name("VERSION").exists()
+    else "0.0.0"
+)
+RELEASE_DATE = "2026-02-21"
 
 
 def clean_msgid(value: str | None) -> str:
@@ -175,6 +181,14 @@ def main() -> int:
         default=0.75,
         help="Base backoff seconds for retries (default: 0.75).",
     )
+    parser.add_argument(
+        "--version",
+        action="store_true",
+        help="Show script version and release date.",
+    )
+    if "--version" in sys.argv[1:]:
+        print(f"gamgmaildeletebymsgidparallel.py v{VERSION} ({RELEASE_DATE})")
+        return 0
 
     if len(sys.argv) == 1:
         parser.print_help()
