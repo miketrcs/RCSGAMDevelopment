@@ -15,25 +15,34 @@ Delete Gmail messages by `Rfc822MessageId` from a CSV export using GAM.
 
 ## Defaults
 - `GAM_PATH`: `~/bin/gam7/gam`
-- `CSV_PATH`: `~/Downloads/exportjobopportunity-metadata.csv`
+- No default CSV path. You must provide `-f /path/to/file.csv` each run.
 
 ## Run
 ```bash
-python3 gamit.py
+python3 gamit.py -f /path/to/export-metadata.csv
 ```
 
 ## Dry Run
 ```bash
-python3 gamit.py --dry-run
+python3 gamit.py -f /path/to/export-metadata.csv
 ```
 
-## Optional Overrides
+## Execute Deletes
 ```bash
-GAM_PATH="/custom/path/to/gam" CSV_PATH="/custom/path/to/file.csv" python3 gamit.py
+python3 gamit.py -x -f /path/to/export-metadata.csv
 ```
 
-With dry run and overrides:
-
+## Use a Custom CSV File
 ```bash
-GAM_PATH="/custom/path/to/gam" CSV_PATH="/custom/path/to/file.csv" python3 gamit.py --dry-run
+python3 gamit.py -f /path/to/export-metadata.csv
+```
+
+With execute mode and custom file:
+```bash
+python3 gamit.py -x -f /path/to/export-metadata.csv
+```
+
+## Optional GAM Override
+```bash
+GAM_PATH="/custom/path/to/gam" python3 gamit.py -f /path/to/export-metadata.csv
 ```

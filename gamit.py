@@ -34,31 +34,28 @@ def clean_user(value: str | None) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
+        add_help=False,
         description="Delete Gmail messages from CSV rows using RFC822 message IDs."
     )
     parser.add_argument(
-        "csv_path",
-        nargs="?",
+        "-f",
+        "--csv-file",
+        required=True,
         help="Path to the CSV file containing Account and Rfc822MessageId columns.",
     )
     parser.add_argument(
         "-x",
         "--execute",
         action="store_true",
-        help="Execute deletes (default mode is dry run).",
+        help="Disable dry run and delete matching emails.",
     )
-
     if len(sys.argv) == 1:
         parser.print_help()
         return 1
 
     args = parser.parse_args()
     dry_run = not args.execute
-    csv_path = Path(args.csv_path) if args.csv_path else None
-
-    if csv_path is None:
-        parser.print_help()
-        return 1
+    csv_path = Path(args.csv_file).expanduser()
 
     if not csv_path.exists():
         print(f"[ERR] CSV file not found: {csv_path}")
