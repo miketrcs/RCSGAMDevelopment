@@ -17,7 +17,6 @@ Delete Gmail messages by `Rfc822MessageId` from a CSV export using GAM.
 ```bash
 python3 gamit.py -f /path/to/export-metadata.csv
 ```
-
 ## Execute Deletes
 ```bash
 python3 gamit.py -x -f /path/to/export-metadata.csv
