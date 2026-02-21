@@ -4,6 +4,7 @@
 Parallel GAM runner for deleting Gmail messages by RFC822 message ID from CSV.
 Default preview mode is local only; use -c/--check to call GAM without delete,
 or -x to execute deletes.
+Developer: miketrcs
 """
 
 import argparse

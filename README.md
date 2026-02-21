@@ -2,6 +2,8 @@
 
 Delete Gmail messages by `Rfc822MessageId` from a CSV export using GAM.
 
+Developer: `miketrcs`
+
 ## Project Structure
 - `gamgmaildeletebymsgid.py`: Single-process CLI script for CSV-driven Gmail deletion checks/deletes with GAM.
 - `gamgmaildeletebymsgidparallel.py`: Parallel version with worker/retry/backoff controls for faster processing.

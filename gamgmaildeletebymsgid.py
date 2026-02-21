@@ -4,6 +4,7 @@
 Reads a CSV export of Gmail accounts and RFC822 message IDs, then deletes
 matching messages via GAM. Preview is the default; use -c to check first 10
 valid rows without delete, or -x to execute deletes.
+Developer: miketrcs
 """
 
 import argparse
