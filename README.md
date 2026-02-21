@@ -8,14 +8,10 @@ Delete Gmail messages by `Rfc822MessageId` from a CSV export using GAM.
 
 ## Requirements
 - Python 3
-- GAM installed and executable (default path: `~/bin/gam7/gam`)
+- GAM installed and executable
 - CSV file with at least these headers:
   - `Account`
   - `Rfc822MessageId`
-
-## Defaults
-- `GAM_PATH`: `~/bin/gam7/gam`
-- No default CSV path. You must provide `-f /path/to/file.csv` each run.
 
 ## Run
 ```bash
