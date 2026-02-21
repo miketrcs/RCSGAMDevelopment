@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
+"""JMT 02/21/2026
+
+Reads a CSV export of Gmail accounts and RFC822 message IDs, then deletes
+matching messages via GAM. Dry run is the default; use -x to execute deletes.
+"""
+
 import argparse
 import csv
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 CURRENT_USER = os.environ.get("USER") or os.environ.get("LOGNAME") or ""
 HOME_DIR = Path.home()
 GAM = os.environ.get("GAM_PATH", str(HOME_DIR / "bin" / "gam7" / "gam"))
-CSV_PATH = Path(
-    os.environ.get(
-        "CSV_PATH",
-        str(HOME_DIR / "Downloads" / "exportjobopportunity-metadata.csv"),
-    )
-)
 
 
 def clean_msgid(value: str | None) -> str:
@@ -36,14 +37,31 @@ def main() -> int:
         description="Delete Gmail messages from CSV rows using RFC822 message IDs."
     )
     parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Preview operations without calling GAM delete.",
+        "csv_path",
+        nargs="?",
+        help="Path to the CSV file containing Account and Rfc822MessageId columns.",
     )
-    args = parser.parse_args()
+    parser.add_argument(
+        "-x",
+        "--execute",
+        action="store_true",
+        help="Execute deletes (default mode is dry run).",
+    )
 
-    if not CSV_PATH.exists():
-        print(f"[ERR] CSV file not found: {CSV_PATH}")
+    if len(sys.argv) == 1:
+        parser.print_help()
+        return 1
+
+    args = parser.parse_args()
+    dry_run = not args.execute
+    csv_path = Path(args.csv_path) if args.csv_path else None
+
+    if csv_path is None:
+        parser.print_help()
+        return 1
+
+    if not csv_path.exists():
+        print(f"[ERR] CSV file not found: {csv_path}")
         return 1
 
     total = 0
@@ -51,7 +69,7 @@ def main() -> int:
     miss = 0
     errs = 0
 
-    with CSV_PATH.open(newline="", encoding="utf-8-sig") as file:
+    with csv_path.open(newline="", encoding="utf-8-sig") as file:
         reader = csv.DictReader(file)
         for row in reader:
             total += 1
@@ -72,7 +90,7 @@ def main() -> int:
                 "doit",
             ]
 
-            if args.dry_run:
+            if dry_run:
                 ran += 1
                 print(f"[DRY-RUN] user={user} msgid={msgid} cmd={' '.join(cmd)}")
                 continue
@@ -102,7 +120,7 @@ def main() -> int:
 
     print(
         f"\\nDone. rows={total} ran={ran} miss={miss} errors={errs} "
-        f"(current_user={CURRENT_USER or 'unknown'} dry_run={args.dry_run})"
+        f"(current_user={CURRENT_USER or 'unknown'} dry_run={dry_run})"
     )
     return 0
 
