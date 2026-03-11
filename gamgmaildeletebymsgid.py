@@ -10,9 +10,11 @@ Developer: miketrcs
 import argparse
 import csv
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
+from typing import Optional
 
 CURRENT_USER = os.environ.get("USER") or os.environ.get("LOGNAME") or ""
 HOME_DIR = Path.home()
@@ -23,9 +25,14 @@ VERSION = (
     else "0.0.0"
 )
 RELEASE_DATE = "2026-02-21"
+ANSI_RESET = "\033[0m"
+ANSI_BOLD = "\033[1m"
+ANSI_GREEN = "\033[32m"
+ANSI_CYAN = "\033[36m"
+ANSI_YELLOW = "\033[33m"
 
 
-def clean_msgid(value: str | None) -> str:
+def clean_msgid(value: Optional[str]) -> str:
     if value is None:
         return ""
     value = value.replace("\r", "").strip()
@@ -34,10 +41,47 @@ def clean_msgid(value: str | None) -> str:
     return value
 
 
-def clean_user(value: str | None) -> str:
+def clean_user(value: Optional[str]) -> str:
     if value is None:
         return ""
     return value.replace("\r", "").strip().strip('"')
+
+
+def should_use_color(stream) -> bool:
+    if os.environ.get("NO_COLOR"):
+        return False
+    if os.environ.get("FORCE_COLOR") or os.environ.get("CLICOLOR_FORCE"):
+        return True
+    return hasattr(stream, "isatty") and stream.isatty()
+
+
+def colorize_help(text: str) -> str:
+    lines = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("usage:"):
+            line = line.replace(
+                "usage:",
+                f"{ANSI_BOLD}{ANSI_GREEN}usage:{ANSI_RESET}",
+                1,
+            )
+        elif stripped.endswith(":") and not line.startswith(" "):
+            line = f"{ANSI_BOLD}{ANSI_YELLOW}{line}{ANSI_RESET}"
+        else:
+            line = re.sub(
+                r"^(\s*)(-[\w],\s+--[\w-]+|--[\w-]+)",
+                rf"\1{ANSI_CYAN}\2{ANSI_RESET}",
+                line,
+            )
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def print_help(parser: argparse.ArgumentParser) -> None:
+    text = parser.format_help()
+    if should_use_color(sys.stdout):
+        text = colorize_help(text)
+    print(text, end="")
 
 
 def main() -> int:
@@ -68,11 +112,20 @@ def main() -> int:
         action="store_true",
         help="Show script version and release date.",
     )
+    parser.add_argument(
+        "-h",
+        "--help",
+        action="store_true",
+        help="Show this help message and exit.",
+    )
     if "--version" in sys.argv[1:]:
         print(f"gamgmaildeletebymsgid.py v{VERSION} ({RELEASE_DATE})")
         return 0
+    if "-h" in sys.argv[1:] or "--help" in sys.argv[1:]:
+        print_help(parser)
+        return 0
     if len(sys.argv) == 1:
-        parser.print_help()
+        print_help(parser)
         return 1
 
     args = parser.parse_args()
