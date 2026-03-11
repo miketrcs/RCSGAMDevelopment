@@ -84,6 +84,18 @@ def print_help(parser: argparse.ArgumentParser) -> None:
     print(text, end="")
 
 
+def is_no_match_output(output_l: str) -> bool:
+    markers = (
+        "0 messages",
+        "got 0 messages",
+        "no messages",
+        "no threads",
+        "no messages matched",
+        "not deleted: no messages matched",
+    )
+    return any(marker in output_l for marker in markers)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         add_help=False,
@@ -178,7 +190,7 @@ def main() -> int:
 
             if dry_run:
                 ran += 1
-                print(f"[DRY-RUN] user={user} msgid={msgid} cmd={' '.join(cmd)}")
+                print(f"[CSV-TEST] user={user} msgid={msgid} cmd={' '.join(cmd)}")
                 continue
 
             if mode == "execute":
@@ -191,20 +203,19 @@ def main() -> int:
                 output = ((proc.stdout or "") + (proc.stderr or "")).strip()
                 output_l = output.lower()
 
-                if proc.returncode != 0:
+                if is_no_match_output(output_l):
+                    miss += 1
+                    if mode == "check":
+                        print(f"[DRYRUNNOMATCH] user={user} msgid={msgid}")
+                    else:
+                        print(f"[NOMATCH] user={user} msgid={msgid}")
+                elif proc.returncode != 0:
                     errs += 1
                     print(f"[ERR] user={user} msgid={msgid}\\n{output}\\n---")
-                elif (
-                    "0 messages" in output_l
-                    or "no messages" in output_l
-                    or "no threads" in output_l
-                ):
-                    miss += 1
-                    print(f"[MISS] user={user} msgid={msgid}")
                 elif mode == "check":
-                    print(f"[CHECK] user={user} msgid={msgid}")
+                    print(f"[DRYRUNFOUND] user={user} msgid={msgid}")
                 else:
-                    print(f"[OK] user={user} msgid={msgid}")
+                    print(f"[DELETED] user={user} msgid={msgid}")
             except Exception as exc:
                 errs += 1
                 print(f"[EXC] user={user} msgid={msgid} exc={exc}")

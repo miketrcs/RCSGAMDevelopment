@@ -102,6 +102,18 @@ def has_rate_limit_error(output_l: str) -> bool:
     return any(marker in output_l for marker in markers)
 
 
+def is_no_match_output(output_l: str) -> bool:
+    markers = (
+        "0 messages",
+        "got 0 messages",
+        "no messages",
+        "no threads",
+        "no messages matched",
+        "not deleted: no messages matched",
+    )
+    return any(marker in output_l for marker in markers)
+
+
 @dataclass(frozen=True)
 class Task:
     row_num: int
@@ -136,7 +148,7 @@ def run_task(task: Task, mode: str, retries: int, backoff_seconds: float) -> Res
 
     if mode == "preview":
         return Result(
-            status="DRY-RUN",
+            status="CSV-TEST",
             user=task.user,
             msgid=task.msgid,
             output=f"cmd={' '.join(cmd)}",
@@ -153,16 +165,15 @@ def run_task(task: Task, mode: str, retries: int, backoff_seconds: float) -> Res
             output = ((proc.stdout or "") + (proc.stderr or "")).strip()
             output_l = output.lower()
 
-            if proc.returncode == 0:
-                if (
-                    "0 messages" in output_l
-                    or "no messages" in output_l
-                    or "no threads" in output_l
-                ):
-                    return Result("MISS", task.user, task.msgid, output, attempt)
+            if is_no_match_output(output_l):
                 if mode == "check":
-                    return Result("CHECK", task.user, task.msgid, output, attempt)
-                return Result("OK", task.user, task.msgid, output, attempt)
+                    return Result("DRYRUNNOMATCH", task.user, task.msgid, output, attempt)
+                return Result("NOMATCH", task.user, task.msgid, output, attempt)
+
+            if proc.returncode == 0:
+                if mode == "check":
+                    return Result("DRYRUNFOUND", task.user, task.msgid, output, attempt)
+                return Result("DELETED", task.user, task.msgid, output, attempt)
 
             if attempt <= retries and has_rate_limit_error(output_l):
                 sleep_for = backoff_seconds * (2 ** (attempt - 1)) + random.uniform(0, 0.2)
@@ -318,20 +329,32 @@ def main() -> int:
                 result = fut.result()
                 ran += 1
 
-                if result.status == "OK":
-                    ok += 1
-                    print(f"[OK] user={result.user} msgid={result.msgid} attempts={result.attempts}")
-                elif result.status == "CHECK":
+                if result.status == "DELETED":
                     ok += 1
                     print(
-                        f"[CHECK] user={result.user} msgid={result.msgid} "
+                        f"[DELETED] user={result.user} msgid={result.msgid} "
                         f"attempts={result.attempts}"
                     )
-                elif result.status == "MISS":
+                elif result.status == "DRYRUNFOUND":
+                    ok += 1
+                    print(
+                        f"[DRYRUNFOUND] user={result.user} msgid={result.msgid} "
+                        f"attempts={result.attempts}"
+                    )
+                elif result.status == "DRYRUNNOMATCH":
                     miss += 1
-                    print(f"[MISS] user={result.user} msgid={result.msgid} attempts={result.attempts}")
-                elif result.status == "DRY-RUN":
-                    print(f"[DRY-RUN] user={result.user} msgid={result.msgid} {result.output}")
+                    print(
+                        f"[DRYRUNNOMATCH] user={result.user} msgid={result.msgid} "
+                        f"attempts={result.attempts}"
+                    )
+                elif result.status == "NOMATCH":
+                    miss += 1
+                    print(
+                        f"[NOMATCH] user={result.user} msgid={result.msgid} "
+                        f"attempts={result.attempts}"
+                    )
+                elif result.status == "CSV-TEST":
+                    print(f"[CSV-TEST] user={result.user} msgid={result.msgid} {result.output}")
                 elif result.status == "ERR":
                     errs += 1
                     print(
