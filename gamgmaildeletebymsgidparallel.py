@@ -28,7 +28,7 @@ VERSION = (
     if Path(__file__).with_name("VERSION").exists()
     else "0.0.0"
 )
-RELEASE_DATE = "2026-02-21"
+RELEASE_DATE = "2026-03-11"
 ANSI_RESET = "\033[0m"
 ANSI_BOLD = "\033[1m"
 ANSI_GREEN = "\033[32m"
