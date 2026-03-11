@@ -99,6 +99,8 @@ final class RunnerViewModel: ObservableObject {
     func run() {
         guard !isRunning else { return }
 
+        clearOutput()
+
         let script = NSString(string: scriptPath).expandingTildeInPath
         let csv = NSString(string: csvPath).expandingTildeInPath
 
