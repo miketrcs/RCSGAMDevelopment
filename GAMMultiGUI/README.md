@@ -8,6 +8,7 @@ macOS SwiftUI wrapper for `gamgmaildeletebymsgidparallel.py`.
 
 ## Platform Note
 - This GUI app and its bundled Python workflow were built and tested on macOS 26.x.
+- macOS 26.x is the only explicitly tested platform for this packaged GUI at this time.
 
 ## Behavior
 - `Run` clears the output area before each launch so every execution starts with a fresh log.
@@ -48,3 +49,9 @@ Notes:
 - the app bundle includes `gamgmaildeletebymsgid.py` and `gamgmaildeletebymsgidparallel.py`
 - users still need Python installed on macOS
 - check/execute features still require a working GAM install and authorization
+- for public distribution, the `.pkg` is the preferred end-user download artifact
+
+Checksum verification example:
+```bash
+shasum -a 256 -c dist/GAMMultiGUI-1.4.0.pkg.sha256
+```

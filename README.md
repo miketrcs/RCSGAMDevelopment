@@ -23,11 +23,18 @@ Developer: `miketrcs`
 
 ## Platform Note
 - The GUI app and Python scripts were built and tested on macOS 26.x.
+- macOS 26.x is the only explicitly tested platform for this repository at this time.
+- If you run this on another macOS version, validate it carefully in your own environment before using it with live mail data.
 
 For the packaged macOS GUI app:
 - the app bundle includes the Python scripts
 - users still need Python installed on macOS
 - users still need GAM installed and authorized for check/execute flows
+
+## Public Release Notes
+- Review the code and test with non-production data before using it in a live environment.
+- Start with `Review CSV`, `Preview Commands`, and `Check (first 10)` before `Execute Deletes`.
+- The signed `.pkg` installer is intended for distribution to end users; if you publish releases publicly, GitHub Releases is the preferred download location for the installer artifact.
 
 ## Versioning
 - Shared version source: `VERSION`
@@ -118,3 +125,10 @@ Current packaged artifacts:
 Installer behavior:
 - installs `GAMMultiGUI.app` into `/Applications`
 - accepted by Gatekeeper as a notarized Developer ID installer
+
+Checksum verification example:
+```bash
+shasum -a 256 -c GAMMultiGUI/dist/GAMMultiGUI-1.4.0.pkg.sha256
+shasum -a 256 -c gamgmaildeletebymsgid.py.sha256
+shasum -a 256 -c gamgmaildeletebymsgidparallel.py.sha256
+```
