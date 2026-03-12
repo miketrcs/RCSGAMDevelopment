@@ -38,7 +38,11 @@ The packaged app bundle lives at:
 Packaged deliverables:
 - `dist/GAMMultiGUI.app`: signed macOS app bundle
 - `dist/GAMMultiGUI-1.4.0.pkg`: signed, notarized, stapled installer package for `/Applications`
-- `dist/*.sha256`: SHA-256 checksum files for the installer package and bundled Python scripts
+- `dist/GAMMultiGUI-1.4.0.pkg.sha256`: SHA-256 checksum file for the installer package
+
+Related checksum files at the repo root:
+- `../gamgmaildeletebymsgid.py.sha256`
+- `../gamgmaildeletebymsgidparallel.py.sha256`
 
 Notes:
 - the app bundle includes `gamgmaildeletebymsgid.py` and `gamgmaildeletebymsgidparallel.py`

@@ -111,7 +111,9 @@ Current GUI behavior:
 Current packaged artifacts:
 - `GAMMultiGUI/dist/GAMMultiGUI.app`: signed macOS app bundle
 - `GAMMultiGUI/dist/GAMMultiGUI-1.4.0.pkg`: signed, notarized, stapled macOS installer package
-- `GAMMultiGUI/dist/*.sha256`: SHA-256 checksum files for the package and Python scripts
+- `GAMMultiGUI/dist/GAMMultiGUI-1.4.0.pkg.sha256`: SHA-256 checksum for the installer package
+- `gamgmaildeletebymsgid.py.sha256`: SHA-256 checksum for the single-process Python script
+- `gamgmaildeletebymsgidparallel.py.sha256`: SHA-256 checksum for the parallel Python script
 
 Installer behavior:
 - installs `GAMMultiGUI.app` into `/Applications`
