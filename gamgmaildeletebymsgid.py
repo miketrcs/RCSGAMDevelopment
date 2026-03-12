@@ -2,8 +2,8 @@
 """JMT 02/21/2026
 
 Reads a CSV export of Gmail accounts and RFC822 message IDs, then deletes
-matching messages via GAM. Preview is the default; use -c to check first 10
-valid rows without delete, or -x to execute deletes.
+matching messages via GAM. Review and preview are local-only modes; use -c to
+check first 10 valid rows without delete, or -x to execute deletes.
 Developer: miketrcs
 """
 
@@ -14,7 +14,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TextIO
 
 CURRENT_USER = os.environ.get("USER") or os.environ.get("LOGNAME") or ""
 HOME_DIR = Path.home()
@@ -24,12 +24,31 @@ VERSION = (
     if Path(__file__).with_name("VERSION").exists()
     else "0.0.0"
 )
-RELEASE_DATE = "2026-03-11"
+RELEASE_DATE = "2026-03-12"
+DEVELOPER = "miketrcs"
 ANSI_RESET = "\033[0m"
 ANSI_BOLD = "\033[1m"
 ANSI_GREEN = "\033[32m"
 ANSI_CYAN = "\033[36m"
 ANSI_YELLOW = "\033[33m"
+
+
+class TeeStream:
+    def __init__(self, primary: TextIO, mirror: TextIO) -> None:
+        self.primary = primary
+        self.mirror = mirror
+
+    def write(self, data: str) -> int:
+        self.primary.write(data)
+        self.mirror.write(data)
+        return len(data)
+
+    def flush(self) -> None:
+        self.primary.flush()
+        self.mirror.flush()
+
+    def isatty(self) -> bool:
+        return self.primary.isatty()
 
 
 def clean_msgid(value: Optional[str]) -> str:
@@ -96,6 +115,62 @@ def is_no_match_output(output_l: str) -> bool:
     return any(marker in output_l for marker in markers)
 
 
+def is_check_found_output(output_l: str) -> bool:
+    markers = (
+        "would delete",
+        "would be deleted",
+        "not deleted:",
+        "messages matched",
+        "got 1 message",
+        "got 2 messages",
+        "got 3 messages",
+        "got 4 messages",
+        "got 5 messages",
+        "got 6 messages",
+        "got 7 messages",
+        "got 8 messages",
+        "got 9 messages",
+    )
+    return any(marker in output_l for marker in markers)
+
+
+def row_review(user: str, msgid: str) -> tuple[str, str]:
+    missing = []
+    if not user:
+        missing.append("Account")
+    if not msgid:
+        missing.append("Rfc822MessageId")
+
+    if missing:
+        return ("CSV-SKIP", f"missing {', '.join(missing)}")
+
+    return ("CSV-VALID", "")
+
+
+def format_csv_row(row: dict[str, str], fieldnames: list[str]) -> str:
+    parts = []
+    for field in fieldnames:
+        value = row.get(field, "")
+        cleaned = value.replace("\r", "").strip() if value is not None else ""
+        parts.append(f"{field}={cleaned or '<blank>'}")
+    return " | ".join(parts)
+
+
+def print_gam_version() -> int:
+    try:
+        proc = subprocess.run([GAM, "version"], capture_output=True, text=True)
+    except OSError as exc:
+        print(f"[ERR] Failed to run GAM at {GAM}: {exc}")
+        return 1
+
+    output = ((proc.stdout or "") + (proc.stderr or "")).strip()
+    if output:
+        print(output)
+    else:
+        print(f"[INFO] GAM ran from {GAM} but did not return version text.")
+    return 0 if proc.returncode == 0 else proc.returncode
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         add_help=False,
@@ -104,7 +179,6 @@ def main() -> int:
     parser.add_argument(
         "-f",
         "--csv-file",
-        required=True,
         help="Path to the CSV file containing Account and Rfc822MessageId columns.",
     )
     parser.add_argument(
@@ -120,18 +194,34 @@ def main() -> int:
         help="Call GAM in check mode for first 10 valid rows (no 'doit', no delete).",
     )
     parser.add_argument(
-        "--version",
-        action="store_true",
-        help="Show script version and release date.",
-    )
-    parser.add_argument(
         "-h",
         "--help",
         action="store_true",
         help="Show this help message and exit.",
     )
+    extra = parser.add_argument_group("additional options")
+    extra.add_argument(
+        "--review",
+        action="store_true",
+        help="Review parsed CSV rows only; do not call GAM.",
+    )
+    extra.add_argument(
+        "--log-file",
+        help="Optional path to save the script output log.",
+    )
+    extra.add_argument(
+        "--gam-version",
+        action="store_true",
+        help="Show the locally installed GAM version and exit.",
+    )
+    extra.add_argument(
+        "--version",
+        action="store_true",
+        help="Show script version and release date.",
+    )
     if "--version" in sys.argv[1:]:
         print(f"gamgmaildeletebymsgid.py v{VERSION} ({RELEASE_DATE})")
+        print(f"Developer: {DEVELOPER}")
         return 0
     if "-h" in sys.argv[1:] or "--help" in sys.argv[1:]:
         print_help(parser)
@@ -141,12 +231,23 @@ def main() -> int:
         return 1
 
     args = parser.parse_args()
-    if args.execute and args.check:
-        print("[ERR] choose only one: -c/--check or -x/--execute")
+    if args.gam_version:
+        return print_gam_version()
+
+    if not args.csv_file:
+        print("[ERR] --csv-file is required unless using --gam-version")
+        print_help(parser)
+        return 1
+
+    selected_modes = sum([args.execute, args.check, args.review])
+    if selected_modes > 1:
+        print("[ERR] choose only one: --review, -c/--check, or -x/--execute")
         return 1
 
     mode = "preview"
-    if args.check:
+    if args.review:
+        mode = "review"
+    elif args.check:
         mode = "check"
     elif args.execute:
         mode = "execute"
@@ -158,73 +259,114 @@ def main() -> int:
         print(f"[ERR] CSV file not found: {csv_path}")
         return 1
 
-    total = 0
-    valid = 0
-    ran = 0
-    miss = 0
-    errs = 0
+    log_handle: Optional[TextIO] = None
+    original_stdout = sys.stdout
+    original_stderr = sys.stderr
+    if args.log_file:
+        log_path = Path(args.log_file).expanduser()
+        try:
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            log_handle = log_path.open("w", encoding="utf-8")
+        except OSError as exc:
+            print(f"[ERR] Could not open log file {log_path}: {exc}")
+            return 1
+        sys.stdout = TeeStream(original_stdout, log_handle)
+        sys.stderr = TeeStream(original_stderr, log_handle)
+        print(f"[INFO] Logging output to {log_path}")
 
-    with csv_path.open(newline="", encoding="utf-8-sig") as file:
-        reader = csv.DictReader(file)
-        for row in reader:
-            total += 1
-            user = clean_user(row.get("Account"))
-            msgid = clean_msgid(row.get("Rfc822MessageId"))
+    try:
+        total = 0
+        valid = 0
+        skipped = 0
+        ran = 0
+        miss = 0
+        errs = 0
 
-            if not user or not msgid:
-                continue
+        with csv_path.open(newline="", encoding="utf-8-sig") as file:
+            reader = csv.DictReader(file)
+            fieldnames = reader.fieldnames or []
+            for row in reader:
+                total += 1
+                user = clean_user(row.get("Account"))
+                msgid = clean_msgid(row.get("Rfc822MessageId"))
+                row_status, reason = row_review(user, msgid)
+                row_dump = format_csv_row(row, fieldnames)
 
-            valid += 1
-            if mode == "check" and valid > 10:
-                continue
-
-            cmd = [
-                GAM,
-                "user",
-                user,
-                "delete",
-                "messages",
-                "query",
-                f"rfc822msgid:{msgid}",
-            ]
-
-            if dry_run:
-                ran += 1
-                print(f"[CSV-TEST] user={user} msgid={msgid} cmd={' '.join(cmd)}")
-                continue
-
-            if mode == "execute":
-                cmd.append("doit")
-
-            try:
-                proc = subprocess.run(cmd, capture_output=True, text=True)
-                ran += 1
-
-                output = ((proc.stdout or "") + (proc.stderr or "")).strip()
-                output_l = output.lower()
-
-                if is_no_match_output(output_l):
-                    miss += 1
-                    if mode == "check":
-                        print(f"[DRYRUNNOMATCH] user={user} msgid={msgid}")
+                if mode == "review":
+                    if row_status == "CSV-VALID":
+                        valid += 1
+                        ran += 1
+                        print(f"[CSV-VALID] row={total} {row_dump}")
                     else:
-                        print(f"[NOMATCH] user={user} msgid={msgid}")
-                elif proc.returncode != 0:
-                    errs += 1
-                    print(f"[ERR] user={user} msgid={msgid}\\n{output}\\n---")
-                elif mode == "check":
-                    print(f"[DRYRUNFOUND] user={user} msgid={msgid}")
-                else:
-                    print(f"[DELETED] user={user} msgid={msgid}")
-            except Exception as exc:
-                errs += 1
-                print(f"[EXC] user={user} msgid={msgid} exc={exc}")
+                        skipped += 1
+                        ran += 1
+                        print(
+                            f"[CSV-SKIP] row={total} reason={reason} {row_dump}"
+                        )
+                    continue
 
-    print(
-        f"\\nDone. rows={total} ran={ran} miss={miss} errors={errs} "
-        f"(current_user={CURRENT_USER or 'unknown'} mode={mode})"
-    )
-    return 0
+                if row_status == "CSV-SKIP":
+                    skipped += 1
+                    continue
+
+                valid += 1
+                if mode == "check" and valid > 10:
+                    continue
+
+                cmd = [
+                    GAM,
+                    "user",
+                    user,
+                    "delete",
+                    "messages",
+                    "query",
+                    f"rfc822msgid:{msgid}",
+                ]
+
+                if dry_run:
+                    ran += 1
+                    print(f"[CSV-TEST] user={user} msgid={msgid} cmd={' '.join(cmd)}")
+                    continue
+
+                if mode == "execute":
+                    cmd.append("doit")
+
+                try:
+                    proc = subprocess.run(cmd, capture_output=True, text=True)
+                    ran += 1
+
+                    output = ((proc.stdout or "") + (proc.stderr or "")).strip()
+                    output_l = output.lower()
+
+                    if is_no_match_output(output_l):
+                        miss += 1
+                        if mode == "check":
+                            print(f"[DRYRUNNOMATCH] user={user} msgid={msgid}")
+                        else:
+                            print(f"[NOMATCH] user={user} msgid={msgid}")
+                    elif mode == "check" and is_check_found_output(output_l):
+                        print(f"[DRYRUNFOUND] user={user} msgid={msgid}")
+                    elif proc.returncode != 0:
+                        errs += 1
+                        print(f"[ERR] user={user} msgid={msgid}\\n{output}\\n---")
+                    elif mode == "check":
+                        print(f"[DRYRUNFOUND] user={user} msgid={msgid}")
+                    else:
+                        print(f"[DELETED] user={user} msgid={msgid}")
+                except Exception as exc:
+                    errs += 1
+                    print(f"[EXC] user={user} msgid={msgid} exc={exc}")
+
+        print(
+            f"\\nDone. rows={total} valid={valid} skipped={skipped} ran={ran} miss={miss} errors={errs} "
+            f"(current_user={CURRENT_USER or 'unknown'} mode={mode})"
+        )
+        return 0
+    finally:
+        if log_handle is not None:
+            sys.stdout = original_stdout
+            sys.stderr = original_stderr
+            log_handle.close()
 
 
 if __name__ == "__main__":

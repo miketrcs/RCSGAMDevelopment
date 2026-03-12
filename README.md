@@ -19,22 +19,32 @@ Developer: `miketrcs`
 
 ## Versioning
 - Shared version source: `VERSION`
-- Current version: `1.1.0`
-- Release date: `2026-03-11`
-- `gamgmaildeletebymsgid.py`: `1.1.0` (2026-03-11)
-- `gamgmaildeletebymsgidparallel.py`: `1.1.0` (2026-03-11)
-- `GAMMultiGUI`: `1.1.0` (2026-03-11)
+- Current version: `1.4.0`
+- Release date: `2026-03-12`
+- `gamgmaildeletebymsgid.py`: `1.4.0` (2026-03-12)
+- `gamgmaildeletebymsgidparallel.py`: `1.4.0` (2026-03-12)
+- `GAMMultiGUI`: `1.4.0` (2026-03-12)
 
-Track versions with git tags that match `VERSION` (example: `v1.1.0`).
+Track versions with git tags that match `VERSION` (example: `v1.4.0`).
 
-## Preview Mode (Default)
+## Review CSV Mode
+```bash
+python3 gamgmaildeletebymsgid.py --review -f /path/to/export-metadata.csv
+```
+
+Review mode prints parsed CSV rows, including skipped rows and reasons, and does not call GAM.
+Use `--log-file /path/to/log.txt` with either script if you want the console output saved to disk while it runs.
+Use `--gam-version` with either script to print the locally installed GAM version and exit.
+
+## Preview Commands Mode (Default)
 ```bash
 python3 gamgmaildeletebymsgid.py -f /path/to/export-metadata.csv
 ```
 
 Preview mode does not call GAM or Google APIs; it only prints commands.
 
-Preview/check/delete status labels:
+Mode/status labels:
+- Review mode prints `CSV-VALID` or `CSV-SKIP`
 - Preview mode prints `CSV-TEST`
 - Check mode prints `DRYRUNFOUND` or `DRYRUNNOMATCH`
 - Execute mode prints `DELETED` or `NOMATCH`
@@ -60,9 +70,11 @@ GAM_PATH="/custom/path/to/gam" python3 gamgmaildeletebymsgid.py -f /path/to/expo
 
 ## Parallel Script
 ```bash
+python3 gamgmaildeletebymsgidparallel.py --review -f /path/to/export-metadata.csv
 python3 gamgmaildeletebymsgidparallel.py -f /path/to/export-metadata.csv
 python3 gamgmaildeletebymsgidparallel.py -c -f /path/to/export-metadata.csv
 python3 gamgmaildeletebymsgidparallel.py -x -f /path/to/export-metadata.csv -w 8 -r 3 -b 0.75
+python3 gamgmaildeletebymsgidparallel.py --review -f /path/to/export-metadata.csv --log-file /path/to/review-log.txt
 ```
 
 Parallel options:
@@ -76,3 +88,7 @@ Parallel options:
 Current GUI behavior:
 - Pressing `Run` clears the output pane before validation and launch so each run starts fresh.
 - `Clear Output` still works as a manual action when you want to wipe the log without starting a run.
+- `Save Output` exports the current output pane to a `.txt` file.
+- Modes are `Review CSV`, `Preview Commands`, `Check (first 10)`, and `Execute Deletes`.
+- `GAM Setup Help` shows macOS installation guidance and official GAM links when GAM is not yet installed.
+- `Check GAM Version` runs a local GAM version check from the app without starting a delete workflow.
