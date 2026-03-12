@@ -3,3 +3,7 @@
 __pycache__/
 **/__pycache__/
 *.pyc
+GAMMultiGUI/dist/*.pkg
+GAMMultiGUI/dist/*.pkg.sha256
+GAMMultiGUI/dist/*.app
+GAMMultiGUI/GAMMultiGUI 1 2026-02-27 15-55-11/
