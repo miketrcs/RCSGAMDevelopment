@@ -6,6 +6,9 @@ macOS SwiftUI wrapper for `gamgmaildeletebymsgidparallel.py`.
 - Current version: `1.4.0`
 - Release date: `2026-03-12`
 
+## Platform Note
+- This GUI app and its bundled Python workflow were built and tested on macOS 26.x.
+
 ## Behavior
 - `Run` clears the output area before each launch so every execution starts with a fresh log.
 - `Clear Output` remains available as a manual reset button.

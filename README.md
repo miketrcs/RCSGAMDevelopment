@@ -21,6 +21,9 @@ Developer: `miketrcs`
   - `Account`
   - `Rfc822MessageId`
 
+## Platform Note
+- The GUI app and Python scripts were built and tested on macOS 26.x.
+
 For the packaged macOS GUI app:
 - the app bundle includes the Python scripts
 - users still need Python installed on macOS
