@@ -12,8 +12,10 @@ macOS SwiftUI wrapper for `gamgmaildeletebymsgidparallel.py`.
 - `Save Output` writes the current output pane to a plain-text file.
 - `Cancel` terminates the running process.
 - Modes are `Review CSV`, `Preview Commands`, `Check (first 10)`, and `Execute Deletes`.
-- `GAM Setup Help` provides macOS install guidance and official GAM links for users who have not installed GAM yet.
+- `Test GAM Setup` runs local GAM diagnostics, including version and `gam info domain`.
+- `GAM Setup Help` provides macOS install guidance, Python download guidance, support/contact details, and copy/paste-only URLs.
 - `Check GAM Version` runs a local GAM version check and appends the result to the output pane.
+- The packaged app bundle includes `gamgmaildeletebymsgid.py` and `gamgmaildeletebymsgidparallel.py` in `Contents/Resources`, and the GUI prefers the bundled parallel script when available.
 
 ## Build
 The package builds a single executable target:

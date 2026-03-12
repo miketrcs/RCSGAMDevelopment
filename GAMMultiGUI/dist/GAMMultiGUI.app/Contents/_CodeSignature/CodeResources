@@ -8,6 +8,14 @@
 		<data>
 		yZZxJfKaDlwLAOdrXRzss3RuAkA=
 		</data>
+		<key>Resources/gamgmaildeletebymsgid.py</key>
+		<data>
+		lB2W0HN3GSzRLibXaK9q/dBO5XM=
+		</data>
+		<key>Resources/gamgmaildeletebymsgidparallel.py</key>
+		<data>
+		x0jKZaMp5kMmGrNvmLFi18+rpZ0=
+		</data>
 	</dict>
 	<key>files2</key>
 	<dict>
@@ -16,6 +24,20 @@
 			<key>hash2</key>
 			<data>
 			1qJ5IXZW3L7Hoh1yA4MqaxWz3d8FAjxj4/odwNK5MJI=
+			</data>
+		</dict>
+		<key>Resources/gamgmaildeletebymsgid.py</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			LcmKjW8Zsly0zeUcb3R3qZlZ13oi+Dv7vPuAU87pNx4=
+			</data>
+		</dict>
+		<key>Resources/gamgmaildeletebymsgidparallel.py</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			JuyEIexfJ+8BO7NOyyngd+09J/Jfy3iB52dRiUfwtiQ=
 			</data>
 		</dict>
 	</dict>

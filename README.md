@@ -90,5 +90,7 @@ Current GUI behavior:
 - `Clear Output` still works as a manual action when you want to wipe the log without starting a run.
 - `Save Output` exports the current output pane to a `.txt` file.
 - Modes are `Review CSV`, `Preview Commands`, `Check (first 10)`, and `Execute Deletes`.
-- `GAM Setup Help` shows macOS installation guidance and official GAM links when GAM is not yet installed.
+- `Test GAM Setup` runs local GAM diagnostics, including version and `gam info domain`, before you start destructive actions.
+- `GAM Setup Help` shows macOS installation guidance, Python download guidance, support/contact details, and copy/paste-only URLs.
 - `Check GAM Version` runs a local GAM version check from the app without starting a delete workflow.
+- The packaged app bundle carries its own copies of the Python scripts in `Contents/Resources`.

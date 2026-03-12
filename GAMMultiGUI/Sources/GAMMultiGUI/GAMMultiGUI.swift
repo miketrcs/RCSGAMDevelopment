@@ -3,6 +3,19 @@ import Foundation
 import SwiftUI
 import UniformTypeIdentifiers
 
+private extension Notification.Name {
+    static let showGAMSetupHelp = Notification.Name("showGAMSetupHelp")
+    static let showCSVHelp = Notification.Name("showCSVHelp")
+}
+
+private enum AppInfo {
+    static var versionString: String {
+        let shortVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown"
+        return "Version \(shortVersion) (Build \(build))"
+    }
+}
+
 @main
 struct GAMMultiGUIApp: App {
     var body: some Scene {
@@ -11,6 +24,16 @@ struct GAMMultiGUIApp: App {
                 .frame(minWidth: 860, minHeight: 620)
         }
         .windowResizability(.contentSize)
+        .commands {
+            CommandGroup(replacing: .help) {
+                Button("GAM Setup Help") {
+                    NotificationCenter.default.post(name: .showGAMSetupHelp, object: nil)
+                }
+                Button("CSV File Guidance") {
+                    NotificationCenter.default.post(name: .showCSVHelp, object: nil)
+                }
+            }
+        }
     }
 }
 
@@ -52,13 +75,20 @@ final class RunnerViewModel: ObservableObject {
 
     private var process: Process?
 
+    static func bundledScriptPath(_ fileName: String) -> String? {
+        guard let resourceURL = Bundle.main.resourceURL else { return nil }
+        let path = resourceURL.appendingPathComponent(fileName).path
+        return FileManager.default.fileExists(atPath: path) ? path : nil
+    }
+
     static func defaultScriptPath() -> String {
         let cwd = FileManager.default.currentDirectoryPath
         let candidates = [
+            bundledScriptPath("gamgmaildeletebymsgidparallel.py"),
             NSString(string: cwd).appendingPathComponent("../gamgmaildeletebymsgidparallel.py"),
             NSString(string: cwd).appendingPathComponent("gamgmaildeletebymsgidparallel.py"),
             "/Users/mike/RCSGAMDevelopment/gamgmaildeletebymsgidparallel.py"
-        ]
+        ].compactMap { $0 }
 
         for path in candidates where FileManager.default.fileExists(atPath: path) {
             return NSString(string: path).standardizingPath
@@ -487,11 +517,11 @@ struct ContentView: View {
                 Text("GAM_PATH")
                     .frame(width: 70, alignment: .leading)
                 TextField("Optional override", text: $vm.gamPath)
+                Button("Test GAM Setup") {
+                    vm.testGAMSetup()
+                }
                 Button("GAM Setup Help") {
                     vm.showingGAMSetupHelp = true
-                }
-                Button("Check GAM Version") {
-                    vm.checkGAMVersion()
                 }
             }
 
@@ -555,11 +585,6 @@ struct ContentView: View {
                 }
                 .disabled(vm.isRunning)
 
-                Button("Test GAM Setup") {
-                    vm.testGAMSetup()
-                }
-                .disabled(vm.isRunning)
-
                 Button("Cancel") {
                     vm.cancel()
                 }
@@ -609,6 +634,12 @@ struct ContentView: View {
             CSVHelpView()
                 .frame(minWidth: 680, minHeight: 360)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .showGAMSetupHelp)) { _ in
+            vm.showingGAMSetupHelp = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .showCSVHelp)) { _ in
+            vm.showingCSVHelp = true
+        }
     }
 }
 
@@ -641,6 +672,9 @@ private struct GAMSetupHelpView: View {
                     dismiss()
                 }
             }
+
+            Text("Due to security reasons, the links below are not hotlinks. Please copy/paste them into your browser.")
+                .foregroundStyle(.red)
 
             Text("Use the official GAM install docs. The quickest supported path is the installer script from the GAM downloads page.")
 
@@ -693,6 +727,28 @@ private struct GAMSetupHelpView: View {
                 .font(.system(.body, design: .monospaced))
                 .textSelection(.enabled)
                 .foregroundStyle(Color.accentColor)
+
+            Text("Python for macOS downloads:")
+                .font(.headline)
+
+            Text(verbatim: "https://www.python.org/downloads/macos/")
+                .font(.system(.body, design: .monospaced))
+                .textSelection(.enabled)
+                .foregroundStyle(Color.accentColor)
+
+            Divider()
+
+            Text("Support / Contact")
+                .font(.headline)
+
+            Text("Michael Thompson")
+                .textSelection(.enabled)
+            Text("Rutherford County Schools, NC")
+                .textSelection(.enabled)
+            Text(verbatim: "mike@rcsnc.org")
+                .textSelection(.enabled)
+            Text(AppInfo.versionString)
+                .textSelection(.enabled)
 
             Spacer()
         }
