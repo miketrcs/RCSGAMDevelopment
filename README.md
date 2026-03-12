@@ -36,6 +36,11 @@ For the packaged macOS GUI app:
 - Start with `Review CSV`, `Preview Commands`, and `Check (first 10)` before `Execute Deletes`.
 - The signed `.pkg` installer is intended for distribution to end users; if you publish releases publicly, GitHub Releases is the preferred download location for the installer artifact.
 
+## Releases
+- Releases page: [https://github.com/miketrcs/RCSGAMDevelopment/releases](https://github.com/miketrcs/RCSGAMDevelopment/releases)
+- Latest release: [https://github.com/miketrcs/RCSGAMDevelopment/releases/latest](https://github.com/miketrcs/RCSGAMDevelopment/releases/latest)
+- Current tagged release: [https://github.com/miketrcs/RCSGAMDevelopment/releases/tag/v1.4.0](https://github.com/miketrcs/RCSGAMDevelopment/releases/tag/v1.4.0)
+
 ## Versioning
 - Shared version source: `VERSION`
 - Current version: `1.4.0`

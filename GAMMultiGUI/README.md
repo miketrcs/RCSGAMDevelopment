@@ -51,6 +51,11 @@ Notes:
 - check/execute features still require a working GAM install and authorization
 - for public distribution, the `.pkg` is the preferred end-user download artifact
 
+Release links:
+- Releases page: [https://github.com/miketrcs/RCSGAMDevelopment/releases](https://github.com/miketrcs/RCSGAMDevelopment/releases)
+- Latest release: [https://github.com/miketrcs/RCSGAMDevelopment/releases/latest](https://github.com/miketrcs/RCSGAMDevelopment/releases/latest)
+- Current tagged release: [https://github.com/miketrcs/RCSGAMDevelopment/releases/tag/v1.4.0](https://github.com/miketrcs/RCSGAMDevelopment/releases/tag/v1.4.0)
+
 Checksum verification example:
 ```bash
 shasum -a 256 -c dist/GAMMultiGUI-1.4.0.pkg.sha256
