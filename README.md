@@ -1,6 +1,6 @@
 # RCSGAMDevelopment
 
-Delete Gmail messages by `Rfc822MessageId` from a CSV export using GAM.
+Delete Gmail messages by `Rfc822MessageId` from a Google Vault CSV export using GAM.
 
 Developer: `miketrcs`
 
