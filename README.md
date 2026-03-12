@@ -4,6 +4,10 @@ Delete Gmail messages by `Rfc822MessageId` from a CSV export using GAM.
 
 Developer: `miketrcs`
 
+## License And Risk
+- License: Apache-2.0. See [LICENSE](/Users/mike/RCSGAMDevelopment/LICENSE).
+- Use at your own risk. Review and validate the code before use. See [DISCLAIMER.md](/Users/mike/RCSGAMDevelopment/DISCLAIMER.md).
+
 ## Project Structure
 - `gamgmaildeletebymsgid.py`: Single-process CLI script for CSV-driven Gmail deletion checks/deletes with GAM.
 - `gamgmaildeletebymsgidparallel.py`: Parallel version with worker/retry/backoff controls for faster processing.
