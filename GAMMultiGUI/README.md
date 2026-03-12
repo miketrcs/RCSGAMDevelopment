@@ -30,3 +30,13 @@ env DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
 
 The packaged app bundle lives at:
 - `dist/GAMMultiGUI.app`
+
+## Distribution
+Packaged deliverables:
+- `dist/GAMMultiGUI.app`: signed macOS app bundle
+- `dist/GAMMultiGUI-1.4.0.pkg`: signed, notarized, stapled installer package for `/Applications`
+
+Notes:
+- the app bundle includes `gamgmaildeletebymsgid.py` and `gamgmaildeletebymsgidparallel.py`
+- users still need Python installed on macOS
+- check/execute features still require a working GAM install and authorization

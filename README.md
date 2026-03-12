@@ -17,6 +17,11 @@ Developer: `miketrcs`
   - `Account`
   - `Rfc822MessageId`
 
+For the packaged macOS GUI app:
+- the app bundle includes the Python scripts
+- users still need Python installed on macOS
+- users still need GAM installed and authorized for check/execute flows
+
 ## Versioning
 - Shared version source: `VERSION`
 - Current version: `1.4.0`
@@ -94,3 +99,12 @@ Current GUI behavior:
 - `GAM Setup Help` shows macOS installation guidance, Python download guidance, support/contact details, and copy/paste-only URLs.
 - `Check GAM Version` runs a local GAM version check from the app without starting a delete workflow.
 - The packaged app bundle carries its own copies of the Python scripts in `Contents/Resources`.
+
+## Distribution
+Current packaged artifacts:
+- `GAMMultiGUI/dist/GAMMultiGUI.app`: signed macOS app bundle
+- `GAMMultiGUI/dist/GAMMultiGUI-1.4.0.pkg`: signed, notarized, stapled macOS installer package
+
+Installer behavior:
+- installs `GAMMultiGUI.app` into `/Applications`
+- accepted by Gatekeeper as a notarized Developer ID installer
