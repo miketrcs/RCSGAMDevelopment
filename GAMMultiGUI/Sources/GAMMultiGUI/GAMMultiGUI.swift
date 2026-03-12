@@ -628,11 +628,11 @@ struct ContentView: View {
         }
         .sheet(isPresented: $vm.showingGAMSetupHelp) {
             GAMSetupHelpView()
-                .frame(minWidth: 640, minHeight: 440)
+                .frame(minWidth: 560, idealWidth: 640, maxWidth: 760, minHeight: 360, idealHeight: 440)
         }
         .sheet(isPresented: $vm.showingCSVHelp) {
             CSVHelpView()
-                .frame(minWidth: 680, minHeight: 360)
+                .frame(minWidth: 560, idealWidth: 680, maxWidth: 760, minHeight: 320, idealHeight: 360)
         }
         .onReceive(NotificationCenter.default.publisher(for: .showGAMSetupHelp)) { _ in
             vm.showingGAMSetupHelp = true
@@ -662,95 +662,107 @@ private struct GAMSetupHelpView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("Install GAM on macOS")
                     .font(.title3)
                     .bold()
                 Spacer()
+            }
+            .padding(.bottom, 14)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Due to security reasons, the links below are not hotlinks. Please copy/paste them into your browser.")
+                        .foregroundStyle(.red)
+
+                    Text("Use the official GAM install docs. The quickest supported path is the installer script from the GAM downloads page.")
+
+                    Text("1. Open Terminal")
+                    Text("2. Run this command:")
+                        .font(.headline)
+
+                    Text(verbatim: "bash <(curl -s -S -L https://git.io/gam-install)")
+                        .font(.system(.body, design: .monospaced))
+                        .textSelection(.enabled)
+                        .foregroundStyle(Color.accentColor)
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color(nsColor: .textBackgroundColor))
+                        )
+
+                    Text("3. Follow the setup prompts to install and authorize GAM.")
+                    Text("4. Relaunch this app, or set the GAM_PATH field to your installed GAM executable.")
+
+                    Text("To update an existing GAM install later, run:")
+                        .font(.headline)
+
+                    Text(verbatim: "bash <(curl -s -S -L https://git.io/gam-install) -l")
+                        .font(.system(.body, design: .monospaced))
+                        .textSelection(.enabled)
+                        .foregroundStyle(Color.accentColor)
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color(nsColor: .textBackgroundColor))
+                        )
+
+                    Text("Copy/paste these URLs into your browser if needed:")
+                        .font(.headline)
+
+                    Text(verbatim: "https://github.com/GAM-team/GAM/wiki/Downloads-Installs")
+                        .font(.system(.body, design: .monospaced))
+                        .textSelection(.enabled)
+                        .foregroundStyle(Color.accentColor)
+
+                    Text(verbatim: "https://github.com/GAM-team/GAM")
+                        .font(.system(.body, design: .monospaced))
+                        .textSelection(.enabled)
+                        .foregroundStyle(Color.accentColor)
+
+                    Text(verbatim: "https://github.com/GAM-team/GAM/wiki/How-to-Update-GAM7")
+                        .font(.system(.body, design: .monospaced))
+                        .textSelection(.enabled)
+                        .foregroundStyle(Color.accentColor)
+
+                    Text("Python for macOS downloads:")
+                        .font(.headline)
+
+                    Text(verbatim: "https://www.python.org/downloads/macos/")
+                        .font(.system(.body, design: .monospaced))
+                        .textSelection(.enabled)
+                        .foregroundStyle(Color.accentColor)
+
+                    Divider()
+
+                    Text("Support / Contact")
+                        .font(.headline)
+
+                    Text("Michael Thompson")
+                        .textSelection(.enabled)
+                    Text("Rutherford County Schools, NC")
+                        .textSelection(.enabled)
+                    Text(verbatim: "mike@rcsnc.org")
+                        .textSelection(.enabled)
+                    Text(AppInfo.versionString)
+                        .textSelection(.enabled)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            Divider()
+                .padding(.vertical, 14)
+
+            HStack {
+                Spacer()
                 Button("Close") {
                     dismiss()
                 }
+                .keyboardShortcut(.cancelAction)
             }
-
-            Text("Due to security reasons, the links below are not hotlinks. Please copy/paste them into your browser.")
-                .foregroundStyle(.red)
-
-            Text("Use the official GAM install docs. The quickest supported path is the installer script from the GAM downloads page.")
-
-            Text("1. Open Terminal")
-            Text("2. Run this command:")
-                .font(.headline)
-
-            Text(verbatim: "bash <(curl -s -S -L https://git.io/gam-install)")
-                .font(.system(.body, design: .monospaced))
-                .textSelection(.enabled)
-                .foregroundStyle(Color.accentColor)
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(nsColor: .textBackgroundColor))
-                )
-
-            Text("3. Follow the setup prompts to install and authorize GAM.")
-            Text("4. Relaunch this app, or set the GAM_PATH field to your installed GAM executable.")
-
-            Text("To update an existing GAM install later, run:")
-                .font(.headline)
-
-            Text(verbatim: "bash <(curl -s -S -L https://git.io/gam-install) -l")
-                .font(.system(.body, design: .monospaced))
-                .textSelection(.enabled)
-                .foregroundStyle(Color.accentColor)
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(nsColor: .textBackgroundColor))
-                )
-
-            Text("Copy/paste these URLs into your browser if needed:")
-                .font(.headline)
-
-            Text(verbatim: "https://github.com/GAM-team/GAM/wiki/Downloads-Installs")
-                .font(.system(.body, design: .monospaced))
-                .textSelection(.enabled)
-                .foregroundStyle(Color.accentColor)
-
-            Text(verbatim: "https://github.com/GAM-team/GAM")
-                .font(.system(.body, design: .monospaced))
-                .textSelection(.enabled)
-                .foregroundStyle(Color.accentColor)
-
-            Text(verbatim: "https://github.com/GAM-team/GAM/wiki/How-to-Update-GAM7")
-                .font(.system(.body, design: .monospaced))
-                .textSelection(.enabled)
-                .foregroundStyle(Color.accentColor)
-
-            Text("Python for macOS downloads:")
-                .font(.headline)
-
-            Text(verbatim: "https://www.python.org/downloads/macos/")
-                .font(.system(.body, design: .monospaced))
-                .textSelection(.enabled)
-                .foregroundStyle(Color.accentColor)
-
-            Divider()
-
-            Text("Support / Contact")
-                .font(.headline)
-
-            Text("Michael Thompson")
-                .textSelection(.enabled)
-            Text("Rutherford County Schools, NC")
-                .textSelection(.enabled)
-            Text(verbatim: "mike@rcsnc.org")
-                .textSelection(.enabled)
-            Text(AppInfo.versionString)
-                .textSelection(.enabled)
-
-            Spacer()
         }
         .padding(20)
     }
@@ -760,31 +772,43 @@ private struct CSVHelpView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("CSV File Guidance")
                     .font(.title3)
                     .bold()
                 Spacer()
+            }
+            .padding(.bottom, 14)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("This file is exported from Google Vault.")
+
+                    Text("Recommended workflow:")
+                        .font(.headline)
+
+                    Text("1. Search in Google Vault for the subject line or other information that matches the specific day you need.")
+                    Text("2. Once you find the matching emails, export them as MBOX.")
+                    Text("3. From the downloaded export files, use the file that ends with `-metadata.csv`.")
+                    Text("4. Please review the file with Review CSV, Preview Commands, and Check (First 10) before executing deletes.")
+
+                    Text("The app expects the Vault metadata CSV so it can read the `Account` and `Rfc822MessageId` fields correctly.")
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            Divider()
+                .padding(.vertical, 14)
+
+            HStack {
+                Spacer()
                 Button("Close") {
                     dismiss()
                 }
+                .keyboardShortcut(.cancelAction)
             }
-
-            Text("This file is exported from Google Vault.")
-
-            Text("Recommended workflow:")
-                .font(.headline)
-
-            Text("1. Search in Google Vault for the subject line or other information that matches the specific day you need.")
-            Text("2. Once you find the matching emails, export them as MBOX.")
-            Text("3. From the downloaded export files, use the file that ends with `-metadata.csv`.")
-            Text("4. Please review the file with Review CSV, Preview Commands, and Check (First 10) before executing deletes.")
-
-            Text("The app expects the Vault metadata CSV so it can read the `Account` and `Rfc822MessageId` fields correctly.")
-                .foregroundStyle(.secondary)
-
-            Spacer()
         }
         .padding(20)
     }
