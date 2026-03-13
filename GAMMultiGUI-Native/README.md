@@ -1,12 +1,12 @@
-# GAMMultiGUI Native
+# GAMIT Native
 
-This folder contains the native-only macOS app that keeps the existing `gam` dependency while removing the Python runner scripts from the app workflow.
+This folder contains `GAMIT Native`, the native-only macOS app that uses GAM to bulk-delete messages from Google Vault metadata CSV exports without relying on the Python runner scripts.
 
 ## Version
 
-- Current version: `1.5.2`
+- Current version: `1.5.3`
 
-The original app remains in `/Users/mike/RCSGAMDevelopment/GAMMultiGUI`. This folder is the native app workspace.
+The original `GAMMultiGUI` app remains in `/Users/mike/RCSGAMDevelopment/GAMMultiGUI`. This folder is the native app workspace.
 
 ## Goal
 
@@ -55,14 +55,14 @@ export NOTARY_PROFILE=YOUR_NOTARY_PROFILE
 
 Default output:
 
-- `dist/GAMMultiGUI-Native.app`: universal macOS app bundle
-- `dist/GAMMultiGUI-Native-1.5.2.pkg`: macOS installer package for `/Applications`
-- `dist/GAMMultiGUI-Native-1.5.2.pkg.sha256`: SHA-256 checksum file for the installer package
+- `dist/GAMIT.app`: universal macOS app bundle
+- `dist/GAMIT-1.5.3.pkg`: macOS installer package for `/Applications`
+- `dist/GAMIT-1.5.3.pkg.sha256`: SHA-256 checksum file for the installer package
 
 Default app metadata:
 
 - bundle identifier: `com.miketrcs.gammultigui.native`
-- app bundle name: `GAMMultiGUI-Native.app`
+- app bundle name: `GAMIT.app`
 
 Override examples:
 

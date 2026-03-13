@@ -11,8 +11,8 @@ Developer: `miketrcs`
 ## Project Structure
 - `gamgmaildeletebymsgid.py`: Single-process CLI script for CSV-driven Gmail deletion checks/deletes with GAM.
 - `gamgmaildeletebymsgidparallel.py`: Parallel version with worker/retry/backoff controls for faster processing.
-- `GAMMultiGUI/`: macOS SwiftUI wrapper for running the parallel script with a local GUI.
-- `GAMMultiGUI-Native/`: Separate native macOS SwiftUI app that calls `gam` directly without the Python runner scripts.
+- `GAMMultiGUI/`: Original macOS SwiftUI wrapper for running the parallel script with a local GUI.
+- `GAMMultiGUI-Native/`: `GAMIT`, the separate native macOS SwiftUI app that calls `gam` directly without the Python runner scripts.
 - `README.md`: Usage and configuration instructions.
 
 ## Requirements
@@ -46,12 +46,12 @@ For the packaged macOS GUI app:
 - Python/original GUI version source: `VERSION`
 - Native GUI version source: `GAMMultiGUI-Native/VERSION`
 - Current Python/original GUI version: `1.4.0`
-- Current native GUI version: `1.5.2`
+- Current native GUI version: `1.5.3`
 - Release date for `1.4.0`: `2026-03-12`
 - `gamgmaildeletebymsgid.py`: `1.4.0` (2026-03-12)
 - `gamgmaildeletebymsgidparallel.py`: `1.4.0` (2026-03-12)
 - `GAMMultiGUI`: `1.4.0` (2026-03-12)
-- `GAMMultiGUI-Native`: `1.5.2`
+- `GAMIT` (`GAMMultiGUI-Native`): `1.5.3`
 
 Track release tags to the version source for the component being released.
 
@@ -128,21 +128,21 @@ Current packaged artifacts:
 - `GAMMultiGUI/dist/GAMMultiGUI.app`: macOS app bundle
 - `GAMMultiGUI/dist/GAMMultiGUI-1.4.0.pkg`: macOS installer package
 - `GAMMultiGUI/dist/GAMMultiGUI-1.4.0.pkg.sha256`: SHA-256 checksum for the installer package
-- `GAMMultiGUI-Native/dist/GAMMultiGUI-Native.app`: native macOS app bundle
-- `GAMMultiGUI-Native/dist/GAMMultiGUI-Native-1.5.2.pkg`: native macOS installer package
-- `GAMMultiGUI-Native/dist/GAMMultiGUI-Native-1.5.2.pkg.sha256`: SHA-256 checksum for the native installer package
+- `GAMMultiGUI-Native/dist/GAMIT.app`: native macOS app bundle
+- `GAMMultiGUI-Native/dist/GAMIT-1.5.3.pkg`: native macOS installer package
+- `GAMMultiGUI-Native/dist/GAMIT-1.5.3.pkg.sha256`: SHA-256 checksum for the native installer package
 - `gamgmaildeletebymsgid.py.sha256`: SHA-256 checksum for the single-process Python script
 - `gamgmaildeletebymsgidparallel.py.sha256`: SHA-256 checksum for the parallel Python script
 
 Installer behavior:
 - installs `GAMMultiGUI.app` into `/Applications`
-- installs `GAMMultiGUI-Native.app` into `/Applications`
+- installs `GAMIT.app` into `/Applications`
 - the native app uses the separate bundle identity `com.miketrcs.gammultigui.native`
 
 Checksum verification example:
 ```bash
 shasum -a 256 -c GAMMultiGUI/dist/GAMMultiGUI-1.4.0.pkg.sha256
-shasum -a 256 -c GAMMultiGUI-Native/dist/GAMMultiGUI-Native-1.5.2.pkg.sha256
+shasum -a 256 -c GAMMultiGUI-Native/dist/GAMIT-1.5.3.pkg.sha256
 shasum -a 256 -c gamgmaildeletebymsgid.py.sha256
 shasum -a 256 -c gamgmaildeletebymsgidparallel.py.sha256
 ```

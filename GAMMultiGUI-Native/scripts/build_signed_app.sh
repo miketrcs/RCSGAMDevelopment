@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$PROJECT_DIR/.." && pwd)"
 
-APP_NAME="${APP_NAME:-GAMMultiGUI-Native}"
+APP_NAME="${APP_NAME:-GAMIT}"
 EXECUTABLE_NAME="${EXECUTABLE_NAME:-GAMMultiGUI}"
 BUNDLE_ID="${BUNDLE_ID:-com.miketrcs.gammultigui.native}"
 SIGN_IDENTITY="${SIGN_IDENTITY:-}"

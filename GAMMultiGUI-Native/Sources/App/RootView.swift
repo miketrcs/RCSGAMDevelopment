@@ -6,11 +6,11 @@ struct RootView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("GAM Multi Native")
+            Text("GAMIT")
                 .font(.title2)
                 .bold()
 
-            Text("Native macOS app for the GAM workflow.")
+            Text("macOS app that uses GAM to bulk-delete messages from Google Vault metadata CSV exports, including phishing, spam, and other targeted search results.")
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 8) {

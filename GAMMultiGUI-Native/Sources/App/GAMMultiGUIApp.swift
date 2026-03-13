@@ -8,7 +8,7 @@ extension Notification.Name {
 @main
 struct GAMMultiGUIApp: App {
     var body: some Scene {
-        WindowGroup {
+        WindowGroup("GAMIT") {
             RootView()
                 .frame(minWidth: 900, minHeight: 640)
         }
