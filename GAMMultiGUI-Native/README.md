@@ -2,6 +2,10 @@
 
 This folder contains the native-only macOS app that keeps the existing `gam` dependency while removing the Python runner scripts from the app workflow.
 
+## Version
+
+- Current version: `1.5`
+
 The original app remains in `/Users/mike/RCSGAMDevelopment/GAMMultiGUI`. This folder is the native app workspace.
 
 ## Goal
@@ -37,7 +41,38 @@ Not included:
 
 - replacing `gam`
 - direct Google API integration
-- installer/signing/notarization work
+
+## Local Signed Build
+
+This branch now includes a repeatable local app/installer release script:
+
+```bash
+./scripts/build_signed_app.sh
+```
+
+Default output:
+
+- `dist/GAMMultiGUI-Native.app`: universal macOS app bundle signed with the local Developer ID application certificate
+- `dist/GAMMultiGUI-Native-1.5.pkg`: signed, notarized, stapled macOS installer package for `/Applications`
+- `dist/GAMMultiGUI-Native-1.5.pkg.sha256`: SHA-256 checksum file for the installer package
+
+Default signing metadata:
+
+- bundle identifier: `com.miketrcs.gammultigui.native`
+- app bundle name: `GAMMultiGUI-Native.app`
+- installer signing identity: `Developer ID Installer: Rutherford County Schools (S6PHL8CDV2)`
+- notarization keychain profile: `ACNOTARY`
+
+Override examples:
+
+```bash
+APP_NAME=GAMMultiGUI \
+BUNDLE_ID=com.miketrcs.gammultigui \
+SIGN_IDENTITY="Developer ID Application: Rutherford County Schools (S6PHL8CDV2)" \
+PKG_SIGN_IDENTITY="Developer ID Installer: Rutherford County Schools (S6PHL8CDV2)" \
+NOTARY_PROFILE=ACNOTARY \
+./scripts/build_signed_app.sh
+```
 
 ## Proposed Structure
 

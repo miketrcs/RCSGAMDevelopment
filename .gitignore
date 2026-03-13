@@ -11,3 +11,5 @@ GAMMultiGUI-Native/.build/
 GAMMultiGUI-Native/.build-local/
 GAMMultiGUI-Native/.vscode/
 GAMMultiGUI-Native/dist/*.app
+GAMMultiGUI-Native/dist/*.pkg
+GAMMultiGUI-Native/dist/*.pkg.sha256
