@@ -46,12 +46,12 @@ For the packaged macOS GUI app:
 - Python/original GUI version source: `VERSION`
 - Native GUI version source: `GAMMultiGUI-Native/VERSION`
 - Current Python/original GUI version: `1.4.0`
-- Current native GUI version: `1.5.1`
+- Current native GUI version: `1.5.2`
 - Release date for `1.4.0`: `2026-03-12`
 - `gamgmaildeletebymsgid.py`: `1.4.0` (2026-03-12)
 - `gamgmaildeletebymsgidparallel.py`: `1.4.0` (2026-03-12)
 - `GAMMultiGUI`: `1.4.0` (2026-03-12)
-- `GAMMultiGUI-Native`: `1.5.1`
+- `GAMMultiGUI-Native`: `1.5.2`
 
 Track release tags to the version source for the component being released.
 
@@ -129,8 +129,8 @@ Current packaged artifacts:
 - `GAMMultiGUI/dist/GAMMultiGUI-1.4.0.pkg`: macOS installer package
 - `GAMMultiGUI/dist/GAMMultiGUI-1.4.0.pkg.sha256`: SHA-256 checksum for the installer package
 - `GAMMultiGUI-Native/dist/GAMMultiGUI-Native.app`: native macOS app bundle
-- `GAMMultiGUI-Native/dist/GAMMultiGUI-Native-1.5.1.pkg`: native macOS installer package
-- `GAMMultiGUI-Native/dist/GAMMultiGUI-Native-1.5.1.pkg.sha256`: SHA-256 checksum for the native installer package
+- `GAMMultiGUI-Native/dist/GAMMultiGUI-Native-1.5.2.pkg`: native macOS installer package
+- `GAMMultiGUI-Native/dist/GAMMultiGUI-Native-1.5.2.pkg.sha256`: SHA-256 checksum for the native installer package
 - `gamgmaildeletebymsgid.py.sha256`: SHA-256 checksum for the single-process Python script
 - `gamgmaildeletebymsgidparallel.py.sha256`: SHA-256 checksum for the parallel Python script
 
@@ -142,7 +142,7 @@ Installer behavior:
 Checksum verification example:
 ```bash
 shasum -a 256 -c GAMMultiGUI/dist/GAMMultiGUI-1.4.0.pkg.sha256
-shasum -a 256 -c GAMMultiGUI-Native/dist/GAMMultiGUI-Native-1.5.1.pkg.sha256
+shasum -a 256 -c GAMMultiGUI-Native/dist/GAMMultiGUI-Native-1.5.2.pkg.sha256
 shasum -a 256 -c gamgmaildeletebymsgid.py.sha256
 shasum -a 256 -c gamgmaildeletebymsgidparallel.py.sha256
 ```

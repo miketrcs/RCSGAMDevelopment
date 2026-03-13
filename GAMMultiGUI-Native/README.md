@@ -4,7 +4,7 @@ This folder contains the native-only macOS app that keeps the existing `gam` dep
 
 ## Version
 
-- Current version: `1.5.1`
+- Current version: `1.5.2`
 
 The original app remains in `/Users/mike/RCSGAMDevelopment/GAMMultiGUI`. This folder is the native app workspace.
 
@@ -56,8 +56,8 @@ export NOTARY_PROFILE=YOUR_NOTARY_PROFILE
 Default output:
 
 - `dist/GAMMultiGUI-Native.app`: universal macOS app bundle
-- `dist/GAMMultiGUI-Native-1.5.1.pkg`: macOS installer package for `/Applications`
-- `dist/GAMMultiGUI-Native-1.5.1.pkg.sha256`: SHA-256 checksum file for the installer package
+- `dist/GAMMultiGUI-Native-1.5.2.pkg`: macOS installer package for `/Applications`
+- `dist/GAMMultiGUI-Native-1.5.2.pkg.sha256`: SHA-256 checksum file for the installer package
 
 Default app metadata:
 
