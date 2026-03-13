@@ -30,6 +30,29 @@ def blend(dst, src, alpha):
     )
 
 
+def circle_alpha(xf, yf, cx, cy, r, feather=2.0):
+    d = math.hypot(xf - cx, yf - cy)
+    return 1.0 - smoothstep(r - feather, r + feather, d)
+
+
+def segment_distance(px, py, x0, y0, x1, y1):
+    dx = x1 - x0
+    dy = y1 - y0
+    length_sq = dx * dx + dy * dy
+    if length_sq == 0:
+        return math.hypot(px - x0, py - y0)
+    t = ((px - x0) * dx + (py - y0) * dy) / length_sq
+    t = clamp(t)
+    qx = x0 + t * dx
+    qy = y0 + t * dy
+    return math.hypot(px - qx, py - qy)
+
+
+def stroke_alpha(px, py, x0, y0, x1, y1, width, feather=1.5):
+    d = segment_distance(px, py, x0, y0, x1, y1)
+    return 1.0 - smoothstep(width - feather, width + feather, d)
+
+
 def write_png_rgba(path: Path, width: int, height: int, rgba_rows):
     def chunk(tag: bytes, data: bytes) -> bytes:
         return (
@@ -76,40 +99,38 @@ def palette_for(theme: str):
     theme_key = theme.strip().lower()
     if theme_key == 'google-vault-light':
         return {
-            'base1': (234, 241, 250),
-            'base2': (214, 226, 243),
-            'steel': (74, 87, 110),
-            'steel_dark': (48, 62, 84),
-            'archive_gray': (101, 116, 145),
-            'archive_dark': (63, 77, 104),
-            'vault_inner': (204, 215, 232),
-            'spoke': (64, 79, 106),
-            'hub1': (56, 71, 95),
-            'hub2': (99, 114, 140),
+            'base1': (225, 234, 248),
+            'base2': (205, 219, 240),
+            'paper': (248, 250, 252),
+            'paper_shadow': (191, 201, 219),
+            'paper_line': (174, 190, 214),
+            'header': (90, 160, 127),
+            'header_dark': (55, 116, 90),
+            'mail': (255, 255, 255),
+            'mail_shadow': (211, 219, 233),
+            'mail_line': (108, 129, 166),
+            'badge': (221, 74, 57),
+            'badge_dark': (161, 44, 32),
+            'badge_mark': (255, 255, 255),
             'highlight': (255, 255, 255),
-            'google_blue': (66, 133, 244),
-            'google_red': (234, 67, 53),
-            'google_yellow': (251, 188, 5),
-            'google_green': (52, 168, 83),
         }
 
     if theme_key == 'google-vault':
         return {
-            'base1': (15, 30, 64),
-            'base2': (31, 47, 88),
-            'steel': (211, 220, 232),
-            'steel_dark': (128, 141, 162),
-            'archive_gray': (162, 176, 196),
-            'archive_dark': (104, 117, 142),
-            'vault_inner': (227, 233, 242),
-            'spoke': (112, 124, 145),
-            'hub1': (120, 132, 150),
-            'hub2': (164, 174, 191),
+            'base1': (22, 35, 68),
+            'base2': (38, 59, 105),
+            'paper': (245, 248, 252),
+            'paper_shadow': (143, 161, 188),
+            'paper_line': (137, 156, 187),
+            'header': (83, 171, 129),
+            'header_dark': (49, 122, 88),
+            'mail': (252, 253, 255),
+            'mail_shadow': (191, 203, 224),
+            'mail_line': (115, 137, 175),
+            'badge': (234, 67, 53),
+            'badge_dark': (170, 43, 31),
+            'badge_mark': (255, 255, 255),
             'highlight': (255, 255, 255),
-            'google_blue': (66, 133, 244),
-            'google_red': (234, 67, 53),
-            'google_yellow': (251, 188, 5),
-            'google_green': (52, 168, 83),
         }
 
     seed = hashlib.sha256(theme.encode('utf-8')).digest()
@@ -129,19 +150,18 @@ def palette_for(theme: str):
     return {
         'base1': hsv_rgb(base_h, background_sat, background_v1),
         'base2': hsv_rgb(alt_h, background_sat * 0.88, background_v2),
-        'steel': hsv_rgb(steel_h, steel_sat, 0.93),
-        'steel_dark': hsv_rgb(steel_h, steel_sat * 1.4, 0.66),
-        'archive_gray': hsv_rgb(steel_h, steel_sat * 1.1, 0.77),
-        'archive_dark': hsv_rgb(steel_h, steel_sat * 1.3, 0.56),
-        'vault_inner': hsv_rgb(steel_h, steel_sat * 0.85, 0.96),
-        'spoke': hsv_rgb(steel_h, steel_sat * 1.55, 0.62),
-        'hub1': hsv_rgb(steel_h, steel_sat * 1.45, 0.57),
-        'hub2': hsv_rgb(steel_h, steel_sat * 1.2, 0.74),
+        'paper': hsv_rgb(steel_h, steel_sat * 0.28, 0.98),
+        'paper_shadow': hsv_rgb(steel_h, steel_sat * 0.85, 0.74),
+        'paper_line': hsv_rgb(steel_h, steel_sat * 1.1, 0.78),
+        'header': hsv_rgb(base_h + 0.31, ring_sat * 0.75, 0.74),
+        'header_dark': hsv_rgb(base_h + 0.31, ring_sat * 0.8, 0.52),
+        'mail': (252, 253, 255),
+        'mail_shadow': hsv_rgb(steel_h, steel_sat * 0.65, 0.84),
+        'mail_line': hsv_rgb(steel_h, steel_sat * 1.4, 0.67),
+        'badge': hsv_rgb(base_h + 0.08, ring_sat * 0.9, 0.92),
+        'badge_dark': hsv_rgb(base_h + 0.08, ring_sat, 0.66),
+        'badge_mark': (255, 255, 255),
         'highlight': (255, 255, 255),
-        'google_blue': hsv_rgb(base_h, ring_sat, ring_val),
-        'google_red': hsv_rgb(base_h + 0.22, ring_sat, ring_val),
-        'google_yellow': hsv_rgb(base_h + 0.44, ring_sat, ring_val),
-        'google_green': hsv_rgb(base_h + 0.66, ring_sat, ring_val),
     }
 
 
@@ -154,15 +174,21 @@ def render_google_vault_icon(size: int, theme: str):
     rect_x0, rect_y0 = size * 0.137, size * 0.117
     rect_x1, rect_y1 = size - rect_x0, size - rect_y0
 
-    ring_r_outer = size * 0.285
-    ring_r_inner = size * 0.213
+    doc_x0 = size * 0.24
+    doc_y0 = size * 0.18
+    doc_x1 = size * 0.79
+    doc_y1 = size * 0.80
+    doc_r = size * 0.06
 
-    vault_r = size * 0.166
-    vault_inner = size * 0.115
+    env_x0 = size * 0.29
+    env_y0 = size * 0.35
+    env_x1 = size * 0.73
+    env_y1 = size * 0.61
+    env_r = size * 0.04
 
-    archive_w = size * 0.342
-    archive_h = size * 0.096
-    archive_y = size * 0.645
+    badge_cx = size * 0.73
+    badge_cy = size * 0.70
+    badge_r = size * 0.12
 
     rows = []
     for y in range(size):
@@ -185,70 +211,151 @@ def render_google_vault_icon(size: int, theme: str):
                 int(mix(p['base1'][2], p['base2'][2], tbg)),
             )
 
-            rx = xf - cx
-            ry = yf - cy
-            r = math.hypot(rx, ry)
-            a = (math.degrees(math.atan2(ry, rx)) + 360.0) % 360.0
+            shadow_alpha = rounded_rect_alpha(
+                xf, yf,
+                doc_x0 + size * 0.01, doc_y0 + size * 0.018,
+                doc_x1 + size * 0.01, doc_y1 + size * 0.018,
+                doc_r
+            )
+            if shadow_alpha > 0.0:
+                col = blend(col, p['paper_shadow'], shadow_alpha * 0.22)
 
-            if ring_r_inner <= r <= ring_r_outer:
-                ring_alpha = smoothstep(ring_r_inner, ring_r_inner + 2.5, r)
-                ring_alpha *= (1.0 - smoothstep(ring_r_outer - 2.5, ring_r_outer, r))
-                segment = None
-                if 320 <= a or a < 35:
-                    segment = p['google_blue']
-                elif 45 <= a < 125:
-                    segment = p['google_red']
-                elif 135 <= a < 215:
-                    segment = p['google_yellow']
-                elif 225 <= a < 305:
-                    segment = p['google_green']
-                if segment is not None:
-                    col = blend(col, segment, 0.95 * ring_alpha)
-
-            if r <= vault_r:
-                grad = clamp(r / vault_r)
-                vault_col = (
-                    int(mix(p['steel'][0], p['steel_dark'][0], grad * 0.5)),
-                    int(mix(p['steel'][1], p['steel_dark'][1], grad * 0.5)),
-                    int(mix(p['steel'][2], p['steel_dark'][2], grad * 0.5)),
+            doc_alpha = rounded_rect_alpha(xf, yf, doc_x0, doc_y0, doc_x1, doc_y1, doc_r)
+            if doc_alpha > 0.0:
+                doc_grad = clamp((yf - doc_y0) / (doc_y1 - doc_y0))
+                doc_col = (
+                    int(mix(p['paper'][0], p['paper_shadow'][0], doc_grad * 0.16)),
+                    int(mix(p['paper'][1], p['paper_shadow'][1], doc_grad * 0.16)),
+                    int(mix(p['paper'][2], p['paper_shadow'][2], doc_grad * 0.16)),
                 )
-                edge = 1.0 - smoothstep(vault_r - 2.5, vault_r, r)
-                col = blend(col, vault_col, edge)
+                col = blend(col, doc_col, doc_alpha)
 
-            if r <= vault_inner:
-                col = blend(col, p['vault_inner'], 0.75)
-                for sa in (0, 60, 120, 180, 240, 300):
-                    da = abs(((a - sa + 180) % 360) - 180)
-                    if da < 4.0 and size * 0.035 < r < size * 0.103:
-                        spoke_alpha = (1.0 - da / 4.0) * 0.9
-                        col = blend(col, p['spoke'], spoke_alpha)
+                header_y = doc_y0 + size * 0.11
+                if yf <= header_y:
+                    head_t = clamp((yf - doc_y0) / max(1.0, header_y - doc_y0))
+                    head_col = (
+                        int(mix(p['header'][0], p['header_dark'][0], head_t * 0.7)),
+                        int(mix(p['header'][1], p['header_dark'][1], head_t * 0.7)),
+                        int(mix(p['header'][2], p['header_dark'][2], head_t * 0.7)),
+                    )
+                    col = blend(col, head_col, doc_alpha * 0.96)
 
-            if r <= size * 0.031:
-                col = blend(col, p['hub1'], 1.0)
-            elif r <= size * 0.043:
-                col = blend(col, p['hub2'], 0.9)
+                if doc_x0 + size * 0.05 <= xf <= doc_x1 - size * 0.05 and header_y + size * 0.03 <= yf <= doc_y1 - size * 0.06:
+                    rel_x = xf - doc_x0
+                    rel_y = yf - doc_y0
+                    row_marks = (0.22, 0.31, 0.40, 0.49, 0.58, 0.67)
+                    col_marks = (0.14, 0.37, 0.60)
+                    for mark in row_marks:
+                        line_y = (doc_y1 - doc_y0) * mark + doc_y0
+                        alpha = stroke_alpha(xf, yf, doc_x0 + size * 0.07, line_y, doc_x1 - size * 0.07, line_y, size * 0.0024)
+                        if alpha > 0.0:
+                            col = blend(col, p['paper_line'], alpha * 0.7)
+                    for mark in col_marks:
+                        line_x = (doc_x1 - doc_x0) * mark + doc_x0
+                        alpha = stroke_alpha(xf, yf, line_x, header_y + size * 0.03, line_x, doc_y1 - size * 0.07, size * 0.0022)
+                        if alpha > 0.0:
+                            col = blend(col, p['paper_line'], alpha * 0.45)
 
-            ax0 = cx - archive_w / 2
-            ax1 = cx + archive_w / 2
-            ay0 = archive_y
-            ay1 = archive_y + archive_h
-            if ax0 <= xf <= ax1 and ay0 <= yf <= ay1:
-                shade = clamp((yf - ay0) / archive_h)
-                ac = (
-                    int(mix(p['archive_gray'][0], p['archive_dark'][0], shade * 0.8)),
-                    int(mix(p['archive_gray'][1], p['archive_dark'][1], shade * 0.8)),
-                    int(mix(p['archive_gray'][2], p['archive_dark'][2], shade * 0.8)),
+            env_shadow = rounded_rect_alpha(
+                xf, yf,
+                env_x0 + size * 0.012, env_y0 + size * 0.016,
+                env_x1 + size * 0.012, env_y1 + size * 0.016,
+                env_r
+            )
+            if env_shadow > 0.0:
+                col = blend(col, p['mail_shadow'], env_shadow * 0.28)
+
+            env_alpha = rounded_rect_alpha(xf, yf, env_x0, env_y0, env_x1, env_y1, env_r)
+            if env_alpha > 0.0:
+                env_grad = clamp((yf - env_y0) / (env_y1 - env_y0))
+                env_col = (
+                    int(mix(p['mail'][0], p['mail_shadow'][0], env_grad * 0.09)),
+                    int(mix(p['mail'][1], p['mail_shadow'][1], env_grad * 0.09)),
+                    int(mix(p['mail'][2], p['mail_shadow'][2], env_grad * 0.09)),
                 )
-                col = blend(col, ac, 0.92)
+                col = blend(col, env_col, env_alpha)
 
-                hx0 = cx - size * 0.061
-                hx1 = cx + size * 0.061
-                hy0 = ay0 + size * 0.033
-                hy1 = ay0 + size * 0.051
-                if hx0 <= xf <= hx1 and hy0 <= yf <= hy1:
-                    col = blend(col, p['spoke'], 0.95)
+                center_x = (env_x0 + env_x1) / 2
+                mid_y = env_y0 + (env_y1 - env_y0) * 0.56
+                line_w = size * 0.0052
+                for x0, y0, x1, y1, a in (
+                    (env_x0 + size * 0.03, env_y0 + size * 0.05, center_x, mid_y, 1.0),
+                    (env_x1 - size * 0.03, env_y0 + size * 0.05, center_x, mid_y, 1.0),
+                    (env_x0 + size * 0.035, env_y1 - size * 0.04, center_x, mid_y, 0.82),
+                    (env_x1 - size * 0.035, env_y1 - size * 0.04, center_x, mid_y, 0.82),
+                    (env_x0 + size * 0.03, env_y0 + size * 0.03, env_x1 - size * 0.03, env_y0 + size * 0.03, 0.5),
+                ):
+                    alpha = stroke_alpha(xf, yf, x0, y0, x1, y1, line_w)
+                    if alpha > 0.0:
+                        col = blend(col, p['mail_line'], alpha * a)
 
-            hr = math.hypot(xf - (cx - size * 0.166), yf - (cy - size * 0.205))
+                stamp_x0 = env_x1 - size * 0.125
+                stamp_y0 = env_y0 + size * 0.04
+                stamp_x1 = env_x1 - size * 0.04
+                stamp_y1 = env_y0 + size * 0.13
+                if stamp_x0 <= xf <= stamp_x1 and stamp_y0 <= yf <= stamp_y1:
+                    stamp_t = clamp((yf - stamp_y0) / max(1.0, stamp_y1 - stamp_y0))
+                    stamp_col = (
+                        int(mix(p['header'][0], p['header_dark'][0], stamp_t * 0.55)),
+                        int(mix(p['header'][1], p['header_dark'][1], stamp_t * 0.55)),
+                        int(mix(p['header'][2], p['header_dark'][2], stamp_t * 0.55)),
+                    )
+                    col = blend(col, stamp_col, env_alpha * 0.96)
+
+                    inner_margin = size * 0.01
+                    scallop_r = size * 0.006
+                    for sx, sy in (
+                        (stamp_x0 + inner_margin, stamp_y0 + inner_margin),
+                        (stamp_x1 - inner_margin, stamp_y0 + inner_margin),
+                        (stamp_x0 + inner_margin, stamp_y1 - inner_margin),
+                        (stamp_x1 - inner_margin, stamp_y1 - inner_margin),
+                    ):
+                        inv = circle_alpha(xf, yf, sx, sy, scallop_r, feather=size * 0.002)
+                        if inv > 0.0:
+                            col = blend(col, p['mail'], inv * 0.95)
+
+                    seal_alpha = circle_alpha(
+                        xf, yf,
+                        (stamp_x0 + stamp_x1) / 2,
+                        (stamp_y0 + stamp_y1) / 2,
+                        size * 0.018,
+                        feather=size * 0.0025
+                    )
+                    if seal_alpha > 0.0:
+                        col = blend(col, p['mail'], seal_alpha * 0.9)
+
+            badge_alpha = circle_alpha(xf, yf, badge_cx, badge_cy, badge_r, feather=size * 0.004)
+            if badge_alpha > 0.0:
+                badge_t = clamp((yf - (badge_cy - badge_r)) / (badge_r * 2))
+                badge_col = (
+                    int(mix(p['badge'][0], p['badge_dark'][0], badge_t * 0.6)),
+                    int(mix(p['badge'][1], p['badge_dark'][1], badge_t * 0.6)),
+                    int(mix(p['badge'][2], p['badge_dark'][2], badge_t * 0.6)),
+                )
+                col = blend(col, badge_col, badge_alpha)
+
+                can_x0 = badge_cx - size * 0.037
+                can_x1 = badge_cx + size * 0.037
+                can_y0 = badge_cy - size * 0.03
+                can_y1 = badge_cy + size * 0.038
+                lid_y = can_y0 - size * 0.013
+                if can_x0 <= xf <= can_x1 and can_y0 <= yf <= can_y1:
+                    col = blend(col, p['badge_mark'], badge_alpha * 0.96)
+                if badge_cx - size * 0.05 <= xf <= badge_cx + size * 0.05 and lid_y <= yf <= lid_y + size * 0.012:
+                    col = blend(col, p['badge_mark'], badge_alpha * 0.96)
+                if badge_cx - size * 0.018 <= xf <= badge_cx + size * 0.018 and lid_y - size * 0.012 <= yf <= lid_y - size * 0.003:
+                    col = blend(col, p['badge_mark'], badge_alpha * 0.96)
+                for offset in (-0.018, 0.0, 0.018):
+                    alpha = stroke_alpha(
+                        xf, yf,
+                        badge_cx + size * offset, can_y0 + size * 0.008,
+                        badge_cx + size * offset, can_y1 - size * 0.01,
+                        size * 0.0025
+                    )
+                    if alpha > 0.0:
+                        col = blend(col, p['badge_dark'], alpha * 0.55)
+
+            hr = math.hypot(xf - (cx - size * 0.16), yf - (cy - size * 0.20))
             if hr < size * 0.215:
                 h = (1 - hr / (size * 0.215)) ** 1.8
                 col = blend(col, p['highlight'], h * 0.14)
