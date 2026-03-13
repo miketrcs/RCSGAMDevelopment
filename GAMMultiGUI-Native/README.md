@@ -4,7 +4,7 @@ This folder contains the native-only macOS app that keeps the existing `gam` dep
 
 ## Version
 
-- Current version: `1.5`
+- Current version: `1.5.1`
 
 The original app remains in `/Users/mike/RCSGAMDevelopment/GAMMultiGUI`. This folder is the native app workspace.
 
@@ -47,32 +47,35 @@ Not included:
 This workspace includes a repeatable local app/installer release script:
 
 ```bash
+export SIGN_IDENTITY="Developer ID Application: Example Org (TEAMID)"
+export PKG_SIGN_IDENTITY="Developer ID Installer: Example Org (TEAMID)"
+export NOTARY_PROFILE=YOUR_NOTARY_PROFILE
 ./scripts/build_signed_app.sh
 ```
 
 Default output:
 
-- `dist/GAMMultiGUI-Native.app`: universal macOS app bundle signed with the local Developer ID application certificate
-- `dist/GAMMultiGUI-Native-1.5.pkg`: signed, notarized, stapled macOS installer package for `/Applications`
-- `dist/GAMMultiGUI-Native-1.5.pkg.sha256`: SHA-256 checksum file for the installer package
+- `dist/GAMMultiGUI-Native.app`: universal macOS app bundle
+- `dist/GAMMultiGUI-Native-1.5.1.pkg`: macOS installer package for `/Applications`
+- `dist/GAMMultiGUI-Native-1.5.1.pkg.sha256`: SHA-256 checksum file for the installer package
 
-Default signing metadata:
+Default app metadata:
 
 - bundle identifier: `com.miketrcs.gammultigui.native`
 - app bundle name: `GAMMultiGUI-Native.app`
-- installer signing identity: `Developer ID Installer: Rutherford County Schools (S6PHL8CDV2)`
-- notarization keychain profile: `ACNOTARY`
 
 Override examples:
 
 ```bash
 APP_NAME=GAMMultiGUI \
 BUNDLE_ID=com.miketrcs.gammultigui \
-SIGN_IDENTITY="Developer ID Application: Rutherford County Schools (S6PHL8CDV2)" \
-PKG_SIGN_IDENTITY="Developer ID Installer: Rutherford County Schools (S6PHL8CDV2)" \
-NOTARY_PROFILE=ACNOTARY \
+SIGN_IDENTITY="Developer ID Application: Example Org (TEAMID)" \
+PKG_SIGN_IDENTITY="Developer ID Installer: Example Org (TEAMID)" \
+NOTARY_PROFILE=YOUR_NOTARY_PROFILE \
 ./scripts/build_signed_app.sh
 ```
+
+Set `NOTARIZE_PKG=0` if you want to skip notarization for a local-only build.
 
 ## Proposed Structure
 

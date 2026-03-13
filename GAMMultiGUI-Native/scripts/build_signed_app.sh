@@ -9,9 +9,9 @@ REPO_ROOT="$(cd "$PROJECT_DIR/.." && pwd)"
 APP_NAME="${APP_NAME:-GAMMultiGUI-Native}"
 EXECUTABLE_NAME="${EXECUTABLE_NAME:-GAMMultiGUI}"
 BUNDLE_ID="${BUNDLE_ID:-com.miketrcs.gammultigui.native}"
-SIGN_IDENTITY="${SIGN_IDENTITY:-Developer ID Application: Rutherford County Schools (S6PHL8CDV2)}"
-PKG_SIGN_IDENTITY="${PKG_SIGN_IDENTITY:-Developer ID Installer: Rutherford County Schools (S6PHL8CDV2)}"
-NOTARY_PROFILE="${NOTARY_PROFILE:-ACNOTARY}"
+SIGN_IDENTITY="${SIGN_IDENTITY:-}"
+PKG_SIGN_IDENTITY="${PKG_SIGN_IDENTITY:-}"
+NOTARY_PROFILE="${NOTARY_PROFILE:-}"
 NOTARIZE_PKG="${NOTARIZE_PKG:-1}"
 VERSION_FILE="${VERSION_FILE:-$PROJECT_DIR/VERSION}"
 VERSION="$(tr -d '\n' < "$VERSION_FILE")"
@@ -29,6 +29,21 @@ RESOURCES_DIR="$CONTENTS_DIR/Resources"
 INFO_PLIST="$CONTENTS_DIR/Info.plist"
 ICON_SOURCE="$PROJECT_DIR/Assets/AppIcon.icns"
 PRODUCT_BINARY="$BUILD_DIR/apple/Products/Release/$EXECUTABLE_NAME"
+
+if [[ -z "$SIGN_IDENTITY" ]]; then
+  echo "SIGN_IDENTITY is required. Export your Developer ID Application certificate name." >&2
+  exit 1
+fi
+
+if [[ -z "$PKG_SIGN_IDENTITY" ]]; then
+  echo "PKG_SIGN_IDENTITY is required. Export your Developer ID Installer certificate name." >&2
+  exit 1
+fi
+
+if [[ "$NOTARIZE_PKG" == "1" && -z "$NOTARY_PROFILE" ]]; then
+  echo "NOTARY_PROFILE is required when NOTARIZE_PKG=1." >&2
+  exit 1
+fi
 
 mkdir -p "$DIST_DIR"
 

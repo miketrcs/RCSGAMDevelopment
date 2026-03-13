@@ -35,7 +35,7 @@ For the packaged macOS GUI app:
 ## Public Release Notes
 - Review the code and test with non-production data before using it in a live environment.
 - Start with `Review CSV`, `Preview Commands`, and `Check (first 10)` before `Execute Deletes`.
-- The signed `.pkg` installer is intended for distribution to end users; if you publish releases publicly, GitHub Releases is the preferred download location for the installer artifact.
+- The `.pkg` installer is intended for distribution to end users; if you publish releases publicly, GitHub Releases is the preferred download location for the installer artifact.
 
 ## Releases
 - Releases page: [https://github.com/miketrcs/RCSGAMDevelopment/releases](https://github.com/miketrcs/RCSGAMDevelopment/releases)
@@ -46,12 +46,12 @@ For the packaged macOS GUI app:
 - Python/original GUI version source: `VERSION`
 - Native GUI version source: `GAMMultiGUI-Native/VERSION`
 - Current Python/original GUI version: `1.4.0`
-- Current native GUI version: `1.5`
+- Current native GUI version: `1.5.1`
 - Release date for `1.4.0`: `2026-03-12`
 - `gamgmaildeletebymsgid.py`: `1.4.0` (2026-03-12)
 - `gamgmaildeletebymsgidparallel.py`: `1.4.0` (2026-03-12)
 - `GAMMultiGUI`: `1.4.0` (2026-03-12)
-- `GAMMultiGUI-Native`: `1.5`
+- `GAMMultiGUI-Native`: `1.5.1`
 
 Track release tags to the version source for the component being released.
 
@@ -125,25 +125,24 @@ Current GUI behavior:
 
 ## Distribution
 Current packaged artifacts:
-- `GAMMultiGUI/dist/GAMMultiGUI.app`: signed macOS app bundle
-- `GAMMultiGUI/dist/GAMMultiGUI-1.4.0.pkg`: signed, notarized, stapled macOS installer package
+- `GAMMultiGUI/dist/GAMMultiGUI.app`: macOS app bundle
+- `GAMMultiGUI/dist/GAMMultiGUI-1.4.0.pkg`: macOS installer package
 - `GAMMultiGUI/dist/GAMMultiGUI-1.4.0.pkg.sha256`: SHA-256 checksum for the installer package
-- `GAMMultiGUI-Native/dist/GAMMultiGUI-Native.app`: signed native macOS app bundle
-- `GAMMultiGUI-Native/dist/GAMMultiGUI-Native-1.5.pkg`: signed, notarized, stapled native macOS installer package
-- `GAMMultiGUI-Native/dist/GAMMultiGUI-Native-1.5.pkg.sha256`: SHA-256 checksum for the native installer package
+- `GAMMultiGUI-Native/dist/GAMMultiGUI-Native.app`: native macOS app bundle
+- `GAMMultiGUI-Native/dist/GAMMultiGUI-Native-1.5.1.pkg`: native macOS installer package
+- `GAMMultiGUI-Native/dist/GAMMultiGUI-Native-1.5.1.pkg.sha256`: SHA-256 checksum for the native installer package
 - `gamgmaildeletebymsgid.py.sha256`: SHA-256 checksum for the single-process Python script
 - `gamgmaildeletebymsgidparallel.py.sha256`: SHA-256 checksum for the parallel Python script
 
 Installer behavior:
 - installs `GAMMultiGUI.app` into `/Applications`
-- accepted by Gatekeeper as a notarized Developer ID installer
 - installs `GAMMultiGUI-Native.app` into `/Applications`
 - the native app uses the separate bundle identity `com.miketrcs.gammultigui.native`
 
 Checksum verification example:
 ```bash
 shasum -a 256 -c GAMMultiGUI/dist/GAMMultiGUI-1.4.0.pkg.sha256
-shasum -a 256 -c GAMMultiGUI-Native/dist/GAMMultiGUI-Native-1.5.pkg.sha256
+shasum -a 256 -c GAMMultiGUI-Native/dist/GAMMultiGUI-Native-1.5.1.pkg.sha256
 shasum -a 256 -c gamgmaildeletebymsgid.py.sha256
 shasum -a 256 -c gamgmaildeletebymsgidparallel.py.sha256
 ```
