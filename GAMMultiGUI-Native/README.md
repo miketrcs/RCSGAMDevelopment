@@ -44,7 +44,7 @@ Not included:
 
 ## Local Signed Build
 
-This branch now includes a repeatable local app/installer release script:
+This workspace includes a repeatable local app/installer release script:
 
 ```bash
 ./scripts/build_signed_app.sh
