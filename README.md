@@ -35,6 +35,7 @@ For the packaged macOS GUI app:
 ## Public Release Notes
 - Review the code and test with non-production data before using it in a live environment.
 - Start with `Review CSV`, `Preview Commands`, and `Check (first 10)` before `Execute Deletes`.
+- In the native app, the destructive mode is labeled `Execute Deletes (DOIT)` and highlighted in red so users can clearly distinguish it from preview and check modes.
 - The `.pkg` installer is intended for distribution to end users; if you publish releases publicly, GitHub Releases is the preferred download location for the installer artifact.
 
 ## Releases
@@ -118,6 +119,7 @@ Current GUI behavior:
 - `Clear Output` still works as a manual action when you want to wipe the log without starting a run.
 - `Save Output` exports the current output pane to a `.txt` file.
 - Modes are `Review CSV`, `Preview Commands`, `Check (first 10)`, and `Execute Deletes`.
+- In the native app, the destructive mode button is labeled `Execute Deletes (DOIT)` and styled in red for extra visibility.
 - `Test GAM Setup` runs local GAM diagnostics, including version and `gam info domain`, before you start destructive actions.
 - `GAM Setup Help` shows macOS installation guidance, Python download guidance, support/contact details, and copy/paste-only URLs.
 - `Check GAM Version` runs a local GAM version check from the app without starting a delete workflow.

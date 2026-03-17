@@ -31,6 +31,7 @@ Included:
 - preview mode
 - check mode
 - execute mode
+- destructive execute mode labeled in the UI as `Execute Deletes (DOIT)` and highlighted in red
 - configurable workers, retries, and backoff
 - direct `gam` invocation
 - streaming logs into the UI
