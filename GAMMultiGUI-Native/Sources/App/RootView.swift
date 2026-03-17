@@ -3,6 +3,7 @@ import SwiftUI
 
 struct RootView: View {
     @StateObject private var viewModel = RunnerViewModel()
+    private let fireEngineRed = Color(red: 0.8, green: 0.0, blue: 0.0)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -74,6 +75,7 @@ struct RootView: View {
                                 viewModel.mode = mode
                             } label: {
                                 Text(mode.title)
+                                    .foregroundStyle(mode == .execute ? fireEngineRed : .primary)
                                     .frame(maxWidth: .infinity, minHeight: 34)
                                     .padding(.horizontal, 12)
                                     .contentShape(Rectangle())
@@ -81,11 +83,11 @@ struct RootView: View {
                             .buttonStyle(.plain)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(viewModel.mode == mode ? Color.accentColor.opacity(0.22) : Color(nsColor: .controlBackgroundColor))
+                                    .fill(modeButtonFill(for: mode))
                             )
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .stroke(viewModel.mode == mode ? Color.accentColor : Color.secondary.opacity(0.22), lineWidth: 1)
+                                    .stroke(modeButtonStroke(for: mode), lineWidth: 1)
                             )
                         }
                     }
@@ -160,6 +162,22 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .showCSVHelp)) { _ in
             viewModel.showingCSVHelp = true
         }
+    }
+
+    private func modeButtonFill(for mode: RunnerMode) -> Color {
+        if mode == .execute {
+            return viewModel.mode == mode ? fireEngineRed.opacity(0.18) : fireEngineRed.opacity(0.08)
+        }
+
+        return viewModel.mode == mode ? Color.accentColor.opacity(0.22) : Color(nsColor: .controlBackgroundColor)
+    }
+
+    private func modeButtonStroke(for mode: RunnerMode) -> Color {
+        if mode == .execute {
+            return fireEngineRed
+        }
+
+        return viewModel.mode == mode ? Color.accentColor : Color.secondary.opacity(0.22)
     }
 }
 

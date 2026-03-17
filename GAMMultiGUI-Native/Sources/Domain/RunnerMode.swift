@@ -17,7 +17,7 @@ enum RunnerMode: String, CaseIterable, Identifiable {
         case .check:
             return "Check (first 10)"
         case .execute:
-            return "Execute Deletes"
+            return "Execute Deletes (DOIT)"
         }
     }
 }
