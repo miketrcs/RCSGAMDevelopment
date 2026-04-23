@@ -2,19 +2,13 @@ import Foundation
 
 struct CSVRow: Sendable {
     let rowNumber: Int
-    let account: String
-    let rfc822MessageID: String
+    let user: String
+    let detail: String
     let rawFields: [String: String]
+    let missingFields: [String]
 
     var validation: Validation {
-        var missing: [String] = []
-        if account.isEmpty {
-            missing.append("Account")
-        }
-        if rfc822MessageID.isEmpty {
-            missing.append("Rfc822MessageId")
-        }
-        return Validation(missingFields: missing)
+        Validation(missingFields: missingFields)
     }
 }
 

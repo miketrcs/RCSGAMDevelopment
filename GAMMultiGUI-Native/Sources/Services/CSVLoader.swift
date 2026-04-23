@@ -1,14 +1,14 @@
 import Foundation
 
 struct CSVLoader {
-    func loadRows(from path: String) throws -> [CSVRow] {
+    func loadRows(from path: String, for action: BulkAction) throws -> [CSVRow] {
         let fileURL = URL(fileURLWithPath: NSString(string: path).expandingTildeInPath)
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
             throw AppError.csvFileNotFound(fileURL.path)
         }
 
         let data = try Data(contentsOf: fileURL)
-        guard var text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .utf8) else {
+        guard var text = String(data: data, encoding: .utf8) else {
             throw AppError.invalidCSV("Could not decode file as UTF-8.")
         }
 
@@ -22,8 +22,8 @@ struct CSVLoader {
         }
 
         let normalizedHeader = header.map(normalizeHeader)
-        let accountIndex = try index(for: "account", in: normalizedHeader)
-        let messageIndex = try index(for: "rfc822messageid", in: normalizedHeader)
+        let userIndex = try index(forAny: userHeaderCandidates(for: action), in: normalizedHeader)
+        let detailIndex = try requiredDetailIndex(for: action, in: normalizedHeader)
 
         var rows: [CSVRow] = []
         for (offset, record) in records.dropFirst().enumerated() {
@@ -33,15 +33,21 @@ struct CSVLoader {
                 fields[name] = cleanField(columnIndex < padded.count ? padded[columnIndex] : "")
             }
 
-            let account = cleanUser(accountIndex < padded.count ? padded[accountIndex] : "")
-            let messageID = cleanMessageID(messageIndex < padded.count ? padded[messageIndex] : "")
+            let user = cleanUser(userIndex < padded.count ? padded[userIndex] : "")
+            let detail = cleanDetail(
+                for: action,
+                value: detailIndex.flatMap { index in
+                    index < padded.count ? padded[index] : ""
+                } ?? ""
+            )
 
             rows.append(
                 CSVRow(
                     rowNumber: offset + 1,
-                    account: account,
-                    rfc822MessageID: messageID,
-                    rawFields: fields
+                    user: user,
+                    detail: detail,
+                    rawFields: fields,
+                    missingFields: missingFields(for: action, user: user, detail: detail)
                 )
             )
         }
@@ -49,18 +55,74 @@ struct CSVLoader {
         return rows
     }
 
-    private func index(for key: String, in headers: [String]) throws -> Int {
-        guard let index = headers.firstIndex(of: key) else {
-            throw AppError.invalidCSV("Expected column \(key).")
+    private func index(forAny keys: [String], in headers: [String]) throws -> Int {
+        for key in keys {
+            if let index = headers.firstIndex(of: key) {
+                return index
+            }
         }
-        return index
+        throw AppError.invalidCSV("Expected one of these columns: \(keys.joined(separator: ", ")).")
+    }
+
+    private func userHeaderCandidates(for action: BulkAction) -> [String] {
+        switch action {
+        case .deleteVaultMessages:
+            return ["account", "user", "email", "primaryemail"]
+        case .suspendUsersCSV, .archiveUsersCSV, .changePasswordsCSV:
+            return ["account", "user", "email", "primaryemail", "primaryemailaddress"]
+        }
+    }
+
+    private func requiredDetailIndex(for action: BulkAction, in headers: [String]) throws -> Int? {
+        switch action {
+        case .deleteVaultMessages:
+            return try index(forAny: ["rfc822messageid"], in: headers)
+        case .suspendUsersCSV, .archiveUsersCSV:
+            return nil
+        case .changePasswordsCSV:
+            return try index(forAny: ["password", "pass", "newpassword"], in: headers)
+        }
+    }
+
+    private func missingFields(for action: BulkAction, user: String, detail: String) -> [String] {
+        var fields: [String] = []
+
+        if user.isEmpty {
+            fields.append("Account/User")
+        }
+
+        switch action {
+        case .deleteVaultMessages:
+            if detail.isEmpty {
+                fields.append("Rfc822MessageId")
+            }
+        case .suspendUsersCSV, .archiveUsersCSV:
+            break
+        case .changePasswordsCSV:
+            if detail.isEmpty {
+                fields.append("Password")
+            }
+        }
+
+        return fields
     }
 
     private func normalizeHeader(_ value: String) -> String {
         value
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .replacingOccurrences(of: "\"", with: "")
+            .replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "_", with: "")
             .lowercased()
+    }
+
+    private func cleanDetail(for action: BulkAction, value: String) -> String {
+        switch action {
+        case .deleteVaultMessages:
+            return cleanMessageID(value)
+        case .suspendUsersCSV, .archiveUsersCSV, .changePasswordsCSV:
+            return cleanField(value)
+        }
     }
 
     private func cleanField(_ value: String) -> String {
@@ -102,7 +164,7 @@ struct CSVLoader {
                             currentField.append("\"")
                         } else {
                             insideQuotes = false
-                            processNonQuote(next, currentField: &currentField, currentRecord: &currentRecord, records: &records, insideQuotes: &insideQuotes)
+                            processNonQuote(next, currentField: &currentField, currentRecord: &currentRecord, records: &records, insideQuotes: insideQuotes)
                         }
                     } else {
                         insideQuotes = false
@@ -111,7 +173,7 @@ struct CSVLoader {
                     insideQuotes = true
                 }
             default:
-                processNonQuote(character, currentField: &currentField, currentRecord: &currentRecord, records: &records, insideQuotes: &insideQuotes)
+                processNonQuote(character, currentField: &currentField, currentRecord: &currentRecord, records: &records, insideQuotes: insideQuotes)
             }
         }
 
@@ -134,7 +196,7 @@ struct CSVLoader {
         currentField: inout String,
         currentRecord: inout [String],
         records: inout [[String]],
-        insideQuotes: inout Bool
+        insideQuotes: Bool
     ) {
         if insideQuotes {
             currentField.append(character)

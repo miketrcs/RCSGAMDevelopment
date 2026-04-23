@@ -348,7 +348,7 @@ def main() -> int:
                         print(f"[DRYRUNFOUND] user={user} msgid={msgid}")
                     elif proc.returncode != 0:
                         errs += 1
-                        print(f"[ERR] user={user} msgid={msgid}\\n{output}\\n---")
+                        print(f"[ERR] user={user} msgid={msgid}\n{output}\n---")
                     elif mode == "check":
                         print(f"[DRYRUNFOUND] user={user} msgid={msgid}")
                     else:
@@ -358,7 +358,7 @@ def main() -> int:
                     print(f"[EXC] user={user} msgid={msgid} exc={exc}")
 
         print(
-            f"\\nDone. rows={total} valid={valid} skipped={skipped} ran={ran} miss={miss} errors={errs} "
+            f"\nDone. rows={total} valid={valid} skipped={skipped} ran={ran} miss={miss} errors={errs} "
             f"(current_user={CURRENT_USER or 'unknown'} mode={mode})"
         )
         return 0

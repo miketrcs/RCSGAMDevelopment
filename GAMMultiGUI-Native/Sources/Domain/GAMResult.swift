@@ -5,17 +5,17 @@ struct GAMResult: Sendable {
         case reviewValid
         case reviewSkip
         case preview
-        case deleted
-        case noMatch
-        case dryRunFound
-        case dryRunNoMatch
+        case success
+        case miss
+        case dryRunSuccess
+        case dryRunMiss
         case error
         case exception
     }
 
     let status: Status
     let user: String
-    let messageID: String
+    let detail: String
     let output: String
     let attempts: Int
     let rowNumber: Int?

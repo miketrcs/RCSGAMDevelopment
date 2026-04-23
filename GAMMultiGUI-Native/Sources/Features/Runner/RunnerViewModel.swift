@@ -3,12 +3,14 @@ import AppKit
 
 @MainActor
 final class RunnerViewModel: ObservableObject {
+    @Published var action: BulkAction = .deleteVaultMessages
     @Published var csvPath = ""
     @Published var gamPathOverride = ""
     @Published var mode: RunnerMode = .preview
     @Published var workers = 8
     @Published var retries = 3
     @Published var backoff = 0.75
+    @Published var forcePasswordChange = true
     @Published var status = "Ready"
     @Published var output = ""
     @Published var isRunning = false
@@ -19,6 +21,10 @@ final class RunnerViewModel: ObservableObject {
     private let engine = NativeDeleteEngine()
     private let gamLocator = GAMLocator()
     private var currentTask: Task<Void, Never>?
+    private var pendingLines: [String] = []
+    private var allLines: [String] = []
+    private var flushScheduled = false
+    private static let maxDisplayCharacters = 2_000_000
 
     let architectureSummary = """
     UI
@@ -36,10 +42,11 @@ final class RunnerViewModel: ObservableObject {
     Planned execution flow
     1. Validate config.
     2. Resolve GAM path.
-    3. Load and normalize CSV rows.
-    4. Convert rows into typed tasks.
-    5. Execute bounded concurrent GAM processes.
-    6. Classify results and stream output back to the UI.
+    3. Select the requested bulk action.
+    4. Load and normalize CSV rows.
+    5. Convert rows into typed tasks.
+    6. Execute bounded concurrent GAM processes.
+    7. Classify results and stream output back to the UI.
     """
 
     var modeRequiresGAM: Bool {
@@ -48,6 +55,14 @@ final class RunnerViewModel: ObservableObject {
 
     var isGAMAvailable: Bool {
         !detectedGAMPath.isEmpty
+    }
+
+    var actionDescription: String {
+        action.subtitle
+    }
+
+    var showsPasswordChangeToggle: Bool {
+        action == .changePasswordsCSV
     }
 
     func browseCSV() {
@@ -87,17 +102,21 @@ final class RunnerViewModel: ObservableObject {
         let config = RunnerConfig(
             csvPath: path,
             gamPathOverride: gamPathOverride,
+            action: action,
             mode: mode,
             workers: workers,
             retries: retries,
-            backoffSeconds: backoff
+            backoffSeconds: backoff,
+            forcePasswordChange: forcePasswordChange
         )
 
         isRunning = true
         output = ""
+        allLines = []
         refreshGAMPath()
-        status = "Running \(mode.title)"
-        appendOutput("[INFO] Starting \(mode.title.lowercased())")
+        status = "Running \(mode.title(for: action))"
+        appendOutput("[INFO] Action: \(action.title)")
+        appendOutput("[INFO] Starting \(mode.title(for: action).lowercased())")
         appendOutput("[INFO] CSV: \(path)")
         if !detectedGAMPath.isEmpty {
             appendOutput("[INFO] GAM: \(detectedGAMPath)")
@@ -112,12 +131,14 @@ final class RunnerViewModel: ObservableObject {
                     }
                 }
                 await MainActor.run {
+                    self.flushPendingOutput()
                     self.status = Task.isCancelled ? "Cancelled" : "Completed"
                     self.isRunning = false
                     self.currentTask = nil
                 }
             } catch AppError.cancelled {
                 await MainActor.run {
+                    self.flushPendingOutput()
                     self.appendOutput("[INFO] Operation cancelled.")
                     self.status = "Cancelled"
                     self.isRunning = false
@@ -125,6 +146,7 @@ final class RunnerViewModel: ObservableObject {
                 }
             } catch {
                 await MainActor.run {
+                    self.flushPendingOutput()
                     self.appendOutput("[ERR] \(error.localizedDescription)")
                     self.status = "Failed"
                     self.isRunning = false
@@ -148,6 +170,7 @@ final class RunnerViewModel: ObservableObject {
 
     func clearOutput() {
         output = ""
+        allLines = []
         status = "Ready"
     }
 
@@ -179,7 +202,7 @@ final class RunnerViewModel: ObservableObject {
 
     private func writeOutput(to url: URL) {
         do {
-            try output.write(to: url, atomically: true, encoding: .utf8)
+            try allLines.joined().write(to: url, atomically: true, encoding: .utf8)
             status = "Output saved"
             appendOutput("[INFO] Saved output to \(url.path)")
         } catch {
@@ -189,9 +212,33 @@ final class RunnerViewModel: ObservableObject {
     }
 
     private func appendOutput(_ text: String) {
-        output += text
-        if !text.hasSuffix("\n") {
-            output += "\n"
+        let line = text.hasSuffix("\n") ? text : text + "\n"
+        allLines.append(line)
+        pendingLines.append(line)
+        guard !flushScheduled else { return }
+        flushScheduled = true
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 50_000_000)
+            self?.flushPendingOutput()
+        }
+    }
+
+    private func flushPendingOutput() {
+        guard !pendingLines.isEmpty else {
+            flushScheduled = false
+            return
+        }
+        let joined = pendingLines.joined()
+        pendingLines.removeAll(keepingCapacity: true)
+        flushScheduled = false
+
+        guard output.count < Self.maxDisplayCharacters else { return }
+        let available = Self.maxDisplayCharacters - output.count
+        if joined.count <= available {
+            output += joined
+        } else {
+            output += String(joined.prefix(available))
+            output += "\n[Display limit reached — use Save Output for the complete log.]\n"
         }
     }
 
@@ -216,6 +263,7 @@ final class RunnerViewModel: ObservableObject {
                     for line in lines {
                         self.appendOutput(line)
                     }
+                    self.flushPendingOutput()
                     self.status = Task.isCancelled ? "Cancelled" : "Completed"
                     self.isRunning = false
                     self.currentTask = nil
@@ -223,6 +271,7 @@ final class RunnerViewModel: ObservableObject {
                 }
             } catch AppError.cancelled {
                 await MainActor.run {
+                    self.flushPendingOutput()
                     self.appendOutput("[INFO] Operation cancelled.")
                     self.status = "Cancelled"
                     self.isRunning = false
@@ -231,6 +280,7 @@ final class RunnerViewModel: ObservableObject {
                 }
             } catch {
                 await MainActor.run {
+                    self.flushPendingOutput()
                     self.appendOutput("[ERR] \(error.localizedDescription)")
                     self.status = "Failed"
                     self.isRunning = false

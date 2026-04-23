@@ -8,7 +8,7 @@ enum RunnerMode: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var title: String {
+    func title(for action: BulkAction) -> String {
         switch self {
         case .review:
             return "Review CSV"
@@ -17,7 +17,7 @@ enum RunnerMode: String, CaseIterable, Identifiable {
         case .check:
             return "Check (first 10)"
         case .execute:
-            return "Execute Deletes (DOIT)"
+            return action.executeButtonTitle
         }
     }
 }

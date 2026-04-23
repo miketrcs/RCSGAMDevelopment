@@ -8,9 +8,9 @@ private struct RunSummary {
 
     mutating func record(_ result: GAMResult) {
         switch result.status {
-        case .deleted, .dryRunFound:
+        case .success, .dryRunSuccess:
             successes += 1
-        case .noMatch, .dryRunNoMatch:
+        case .miss, .dryRunMiss:
             misses += 1
         case .error:
             errors += 1
@@ -27,17 +27,19 @@ struct NativeDeleteEngine {
     private let gamLocator = GAMLocator()
     private let commandBuilder = GAMCommandBuilder()
     private let processRunner = GAMProcessRunner()
+    private let classifier = GAMResultClassifier()
+    private let formatter = GAMResultFormatter()
 
     func run(
         config: RunnerConfig,
         emitLine: @escaping @Sendable (String) async -> Void
     ) async throws {
-        let rows = try csvLoader.loadRows(from: config.csvPath)
+        let rows = try csvLoader.loadRows(from: config.csvPath, for: config.action)
         try Task.checkCancellation()
 
         switch config.mode {
         case .review:
-            try await formatReview(rows: rows, emitLine: emitLine)
+            try await formatReview(rows: rows, config: config, emitLine: emitLine)
         case .preview:
             try await formatPreview(rows: rows, config: config, emitLine: emitLine)
         case .check:
@@ -86,6 +88,7 @@ struct NativeDeleteEngine {
 
     private func formatReview(
         rows: [CSVRow],
+        config: RunnerConfig,
         emitLine: @escaping @Sendable (String) async -> Void
     ) async throws {
         var validCount = 0
@@ -95,13 +98,13 @@ struct NativeDeleteEngine {
 
         for row in rows {
             try Task.checkCancellation()
-            let description = formatRow(row.rawFields)
+            let description = formatter.formatRow(row.rawFields)
             if row.validation.isValid {
                 validCount += 1
-                bufferedLines.append("[CSV-VALID] row=\(row.rowNumber) \(description)")
+                bufferedLines.append("[CSV-VALID] row=\(row.rowNumber) action=\(config.action.rawValue) \(description)")
             } else {
                 skippedCount += 1
-                bufferedLines.append("[CSV-SKIP] row=\(row.rowNumber) reason=\(row.validation.reason) \(description)")
+                bufferedLines.append("[CSV-SKIP] row=\(row.rowNumber) action=\(config.action.rawValue) reason=\(row.validation.reason) \(description)")
             }
 
             if bufferedLines.count >= 200 {
@@ -114,7 +117,7 @@ struct NativeDeleteEngine {
             await emitLine(bufferedLines.joined(separator: "\n"))
         }
         await emitLine("")
-        await emitLine("Done. rows=\(rows.count) valid=\(validCount) skipped=\(skippedCount) ran=\(rows.count) errors=0 exceptions=0 (mode=review)")
+        await emitLine("Done. action=\(config.action.rawValue) rows=\(rows.count) valid=\(validCount) skipped=\(skippedCount) ran=\(rows.count) errors=0 exceptions=0 (mode=review)")
     }
 
     private func formatPreview(
@@ -124,7 +127,7 @@ struct NativeDeleteEngine {
     ) async throws {
         let tasks = rows
             .filter { $0.validation.isValid }
-            .map { GAMTask(rowNumber: $0.rowNumber, user: $0.account, messageID: $0.rfc822MessageID) }
+            .map { GAMTask(rowNumber: $0.rowNumber, user: $0.user, detail: $0.detail) }
 
         let gamPath = gamLocator.resolvePath(override: config.gamPathOverride) ?? "gam"
         var bufferedLines: [String] = []
@@ -132,8 +135,8 @@ struct NativeDeleteEngine {
 
         for task in tasks {
             try Task.checkCancellation()
-            let command = commandBuilder.command(for: task, mode: .preview, gamPath: gamPath)
-            bufferedLines.append("[CSV-TEST] user=\(task.user) msgid=\(task.messageID) cmd=\(command.joined(separator: " "))")
+            let command = commandBuilder.command(for: task, action: config.action, mode: .preview, gamPath: gamPath)
+            bufferedLines.append(formatter.previewLine(for: config.action, task: task, command: command, forcePasswordChange: config.forcePasswordChange))
 
             if bufferedLines.count >= 200 {
                 await emitLine(bufferedLines.joined(separator: "\n"))
@@ -146,7 +149,7 @@ struct NativeDeleteEngine {
         }
         let skippedCount = rows.count - tasks.count
         await emitLine("")
-        await emitLine("Done. rows=\(rows.count) valid=\(tasks.count) skipped=\(skippedCount) ran=\(tasks.count) miss=0 errors=0 (mode=preview)")
+        await emitLine("Done. action=\(config.action.rawValue) rows=\(rows.count) valid=\(tasks.count) skipped=\(skippedCount) ran=\(tasks.count) miss=0 errors=0 (mode=preview)")
     }
 
     private func formatCheck(
@@ -157,13 +160,13 @@ struct NativeDeleteEngine {
         let gamPath = try resolveGAMPath(override: config.gamPathOverride)
         let validTasks = rows
             .filter { $0.validation.isValid }
-            .map { GAMTask(rowNumber: $0.rowNumber, user: $0.account, messageID: $0.rfc822MessageID) }
+            .map { GAMTask(rowNumber: $0.rowNumber, user: $0.user, detail: $0.detail) }
 
         let tasks = Array(validTasks.prefix(10))
         if validTasks.count > tasks.count {
             await emitLine("[INFO] check mode limiting to first 10 valid rows (from \(validTasks.count)).")
         }
-        await emitLine("Starting. rows=\(rows.count) valid=\(tasks.count) workers=\(min(config.workers, max(1, tasks.count))) retries=\(config.retries) mode=check")
+        await emitLine("Starting. action=\(config.action.rawValue) rows=\(rows.count) valid=\(tasks.count) workers=\(min(config.workers, max(1, tasks.count))) retries=\(config.retries) mode=check")
 
         let summary = try await runConcurrentTasks(
             tasks: tasks,
@@ -175,7 +178,7 @@ struct NativeDeleteEngine {
 
         let skippedCount = rows.count - validTasks.count
         await emitLine("")
-        await emitLine("Done. rows=\(rows.count) valid=\(validTasks.count) skipped=\(skippedCount) ran=\(tasks.count) miss=\(summary.misses) errors=\(summary.errors) exceptions=\(summary.exceptions) (mode=check)")
+        await emitLine("Done. action=\(config.action.rawValue) rows=\(rows.count) valid=\(validTasks.count) skipped=\(skippedCount) ran=\(tasks.count) miss=\(summary.misses) errors=\(summary.errors) exceptions=\(summary.exceptions) checked=\(summary.successes) (mode=check)")
     }
 
     private func formatExecute(
@@ -186,9 +189,9 @@ struct NativeDeleteEngine {
         let gamPath = try resolveGAMPath(override: config.gamPathOverride)
         let tasks = rows
             .filter { $0.validation.isValid }
-            .map { GAMTask(rowNumber: $0.rowNumber, user: $0.account, messageID: $0.rfc822MessageID) }
+            .map { GAMTask(rowNumber: $0.rowNumber, user: $0.user, detail: $0.detail) }
 
-        await emitLine("Starting. rows=\(rows.count) valid=\(tasks.count) workers=\(min(config.workers, max(1, tasks.count))) retries=\(config.retries) mode=execute")
+        await emitLine("Starting. action=\(config.action.rawValue) rows=\(rows.count) valid=\(tasks.count) workers=\(min(config.workers, max(1, tasks.count))) retries=\(config.retries) mode=execute")
 
         let summary = try await runConcurrentTasks(
             tasks: tasks,
@@ -200,17 +203,22 @@ struct NativeDeleteEngine {
 
         let skippedCount = rows.count - tasks.count
         await emitLine("")
-        await emitLine("Done. rows=\(rows.count) valid=\(tasks.count) skipped=\(skippedCount) ran=\(tasks.count) miss=\(summary.misses) errors=\(summary.errors) exceptions=\(summary.exceptions) deleted=\(summary.successes) (mode=execute)")
+        await emitLine("Done. action=\(config.action.rawValue) rows=\(rows.count) valid=\(tasks.count) skipped=\(skippedCount) ran=\(tasks.count) miss=\(summary.misses) errors=\(summary.errors) exceptions=\(summary.exceptions) \(config.action.successSummaryLabel)=\(summary.successes) (mode=execute)")
     }
 
     private func runTask(
         task: GAMTask,
+        action: BulkAction,
         gamPath: String,
         mode: RunnerMode,
+        forcePasswordChange: Bool,
         retries: Int,
         backoffSeconds: Double
     ) async throws -> GAMResult {
-        let command = commandBuilder.command(for: task, mode: mode, gamPath: gamPath)
+        var command = commandBuilder.command(for: task, action: action, mode: mode, gamPath: gamPath)
+        if action == .changePasswordsCSV && mode != .check {
+            command.append(contentsOf: ["changepassword", forcePasswordChange ? "on" : "off"])
+        }
         var attempt = 0
 
         while true {
@@ -222,29 +230,29 @@ struct NativeDeleteEngine {
                 let output = processResult.output
                 let outputLower = output.lowercased()
 
-                if isNoMatchOutput(outputLower) {
+                if classifier.isMissOutput(outputLower, action: action, mode: mode) {
                     return GAMResult(
-                        status: mode == .check ? .dryRunNoMatch : .noMatch,
+                        status: mode == .check ? .dryRunMiss : .miss,
                         user: task.user,
-                        messageID: task.messageID,
+                        detail: task.detail,
                         output: output,
                         attempts: attempt,
                         rowNumber: task.rowNumber
                     )
                 }
 
-                if processResult.exitCode == 0 || (mode == .check && isCheckFoundOutput(outputLower)) {
+                if classifier.isSuccessfulResult(output: outputLower, exitCode: processResult.exitCode, action: action, mode: mode) {
                     return GAMResult(
-                        status: mode == .check ? .dryRunFound : .deleted,
+                        status: mode == .check ? .dryRunSuccess : .success,
                         user: task.user,
-                        messageID: task.messageID,
+                        detail: task.detail,
                         output: output,
                         attempts: attempt,
                         rowNumber: task.rowNumber
                     )
                 }
 
-                if attempt <= retries && hasRateLimitError(outputLower) {
+                if attempt <= retries && classifier.hasRateLimitError(outputLower) {
                     try await Task.sleep(nanoseconds: retryDelayNanoseconds(attempt: attempt, baseSeconds: backoffSeconds))
                     continue
                 }
@@ -252,12 +260,14 @@ struct NativeDeleteEngine {
                 return GAMResult(
                     status: .error,
                     user: task.user,
-                    messageID: task.messageID,
+                    detail: task.detail,
                     output: output,
                     attempts: attempt,
                     rowNumber: task.rowNumber
                 )
             } catch AppError.cancelled {
+                throw AppError.cancelled
+            } catch is CancellationError {
                 throw AppError.cancelled
             } catch {
                 if attempt <= retries {
@@ -268,7 +278,7 @@ struct NativeDeleteEngine {
                 return GAMResult(
                     status: .exception,
                     user: task.user,
-                    messageID: task.messageID,
+                    detail: task.detail,
                     output: error.localizedDescription,
                     attempts: attempt,
                     rowNumber: task.rowNumber
@@ -298,8 +308,10 @@ struct NativeDeleteEngine {
                 group.addTask {
                     try await runTask(
                         task: task,
+                        action: config.action,
                         gamPath: gamPath,
                         mode: mode,
+                        forcePasswordChange: config.forcePasswordChange,
                         retries: config.retries,
                         backoffSeconds: config.backoffSeconds
                     )
@@ -309,7 +321,7 @@ struct NativeDeleteEngine {
             while let result = try await group.next() {
                 try Task.checkCancellation()
                 summary.record(result)
-                await emitLine(formatResult(result))
+                await emitLine(formatter.formatResult(result, action: config.action))
 
                 if result.status == .error && !result.output.isEmpty {
                     await emitLine(result.output)
@@ -320,8 +332,10 @@ struct NativeDeleteEngine {
                     group.addTask {
                         try await runTask(
                             task: task,
+                            action: config.action,
                             gamPath: gamPath,
                             mode: mode,
+                            forcePasswordChange: config.forcePasswordChange,
                             retries: config.retries,
                             backoffSeconds: config.backoffSeconds
                         )
@@ -333,83 +347,11 @@ struct NativeDeleteEngine {
         return summary
     }
 
-    private func formatResult(_ result: GAMResult) -> String {
-        switch result.status {
-        case .deleted:
-            return "[DELETED] user=\(result.user) msgid=\(result.messageID) attempts=\(result.attempts)"
-        case .noMatch:
-            return "[NOMATCH] user=\(result.user) msgid=\(result.messageID) attempts=\(result.attempts)"
-        case .dryRunFound:
-            return "[DRYRUNFOUND] user=\(result.user) msgid=\(result.messageID) attempts=\(result.attempts)"
-        case .dryRunNoMatch:
-            return "[DRYRUNNOMATCH] user=\(result.user) msgid=\(result.messageID) attempts=\(result.attempts)"
-        case .error:
-            return "[ERR] user=\(result.user) msgid=\(result.messageID) attempts=\(result.attempts)"
-        case .exception:
-            return "[EXC] user=\(result.user) msgid=\(result.messageID) attempts=\(result.attempts) exc=\(result.output)"
-        case .reviewValid, .reviewSkip, .preview:
-            return result.output
-        }
-    }
-
-    private func formatRow(_ fields: [String: String]) -> String {
-        let sortedKeys = fields.keys.sorted()
-        return sortedKeys.map { key in
-            let value = fields[key]?.isEmpty == false ? fields[key]! : "<blank>"
-            return "\(key)=\(value)"
-        }.joined(separator: " | ")
-    }
-
     private func resolveGAMPath(override: String) throws -> String {
         guard let path = gamLocator.resolvePath(override: override) else {
             throw AppError.gamNotFound
         }
         return path
-    }
-
-    private func hasRateLimitError(_ output: String) -> Bool {
-        let markers = [
-            "rate limit",
-            "ratelimit",
-            "quota",
-            "429",
-            "userratelimitexceeded",
-            "toomanyrequests",
-            "backend error",
-            "temporarily unavailable"
-        ]
-        return markers.contains { output.contains($0) }
-    }
-
-    private func isNoMatchOutput(_ output: String) -> Bool {
-        let markers = [
-            "0 messages",
-            "got 0 messages",
-            "no messages",
-            "no threads",
-            "no messages matched",
-            "not deleted: no messages matched"
-        ]
-        return markers.contains { output.contains($0) }
-    }
-
-    private func isCheckFoundOutput(_ output: String) -> Bool {
-        let markers = [
-            "would delete",
-            "would be deleted",
-            "not deleted:",
-            "messages matched",
-            "got 1 message",
-            "got 2 messages",
-            "got 3 messages",
-            "got 4 messages",
-            "got 5 messages",
-            "got 6 messages",
-            "got 7 messages",
-            "got 8 messages",
-            "got 9 messages"
-        ]
-        return markers.contains { output.contains($0) }
     }
 
     private func retryDelayNanoseconds(attempt: Int, baseSeconds: Double) -> UInt64 {

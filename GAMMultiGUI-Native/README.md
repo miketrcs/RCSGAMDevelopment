@@ -1,12 +1,12 @@
 # GAMIT Native
 
-This folder contains `GAMIT Native`, the native-only macOS app that uses GAM to bulk-delete messages from Google Vault metadata CSV exports without relying on the Python runner scripts.
+This folder contains `GAMIT Native`, the native-only macOS app that uses GAM for bulk admin workflows without relying on the Python runner scripts.
 
 ## Version
 
-- Current version: `1.5.4`
+- Current version: `1.5.5`
 
-The original `GAMMultiGUI` app remains in `/Users/mike/RCSGAMDevelopment/GAMMultiGUI`. This folder is the native app workspace.
+The original `GAMMultiGUI` app remains in `/Users/mike/All Development/RCSGAMDevelopment/GAMMultiGUI`. This folder is the native app workspace.
 
 ## Goal
 
@@ -27,18 +27,26 @@ With this:
 
 Included:
 
+- Vault message delete workflow from CSV
+- CSV-based suspend users workflow
+- CSV-based archive users workflow
+- CSV-based password change workflow
 - CSV review
 - preview mode
 - check mode
 - execute mode
-- destructive execute mode labeled in the UI as `Execute Deletes (DOIT)` and highlighted in red
 - configurable workers, retries, and backoff
 - direct `gam` invocation
 - streaming logs into the UI
 - cancel support
 - save output
 
-Not included:
+Planned next additions:
+
+- move users from one OU to another
+- mass actions by OU or group (not just CSV)
+
+Still not included:
 
 - replacing `gam`
 - direct Google API integration
@@ -57,8 +65,8 @@ export NOTARY_PROFILE=YOUR_NOTARY_PROFILE
 Default output:
 
 - `dist/GAMIT.app`: universal macOS app bundle
-- `dist/GAMIT-1.5.4.pkg`: macOS installer package for `/Applications`
-- `dist/GAMIT-1.5.4.pkg.sha256`: SHA-256 checksum file for the installer package
+- `dist/GAMIT-1.5.5.pkg`: macOS installer package for `/Applications`
+- `dist/GAMIT-1.5.5.pkg.sha256`: SHA-256 checksum file for the installer package
 
 Default app metadata:
 
@@ -78,12 +86,13 @@ NOTARY_PROFILE=YOUR_NOTARY_PROFILE \
 
 Set `NOTARIZE_PKG=0` if you want to skip notarization for a local-only build.
 
-## Proposed Structure
+## Structure
 
 ```text
 GAMMultiGUI-Native/
   Package.swift
   README.md
+  VERSION
   Sources/
     App/
       GAMMultiGUIApp.swift
@@ -92,16 +101,20 @@ GAMMultiGUI-Native/
       Runner/
         RunnerViewModel.swift
     Domain/
+      BulkAction.swift
       RunnerMode.swift
       CSVRow.swift
       GAMTask.swift
       GAMResult.swift
       RunnerConfig.swift
     Services/
+      AppError.swift
       CSVLoader.swift
       GAMLocator.swift
       GAMCommandBuilder.swift
       GAMProcessRunner.swift
+      GAMResultClassifier.swift
+      GAMResultFormatter.swift
       NativeDeleteEngine.swift
       OutputStore.swift
 ```
@@ -120,6 +133,19 @@ Responsibilities:
 - validate inputs before launch
 - start and cancel runs
 - expose status and streamed output to SwiftUI
+- batch output flushes for performance
+- enforce a 2 MB display cap with full output preserved for Save Output
+
+### `BulkAction`
+
+Represents the operator-selected workflow.
+
+Current actions:
+
+- delete Vault messages from CSV
+- suspend users from CSV
+- archive users from CSV
+- change passwords from CSV
 
 ### `CSVLoader`
 
@@ -128,13 +154,13 @@ Reads the CSV file and converts rows into typed domain records.
 Responsibilities:
 
 - read UTF-8 and UTF-8 with BOM
-- map `Account` and `Rfc822MessageId`
+- map workflow-specific columns such as `Account`, `Rfc822MessageId`, `User`, `Primary Email`, and `Password`
 - normalize message IDs and account values
 - produce review-friendly validation results
 
 ### `NativeDeleteEngine`
 
-The native replacement for `gamgmaildeletebymsgidparallel.py`.
+The native bulk-action execution engine.
 
 Responsibilities:
 
@@ -144,11 +170,26 @@ Responsibilities:
 - run a bounded number of concurrent tasks
 - apply retry and exponential backoff for transient failures
 - emit structured progress events as each task completes
+- correctly propagate cancellation through retry sleeps and task checks
 
-Implementation direction:
+### `GAMResultClassifier`
 
-- use Swift concurrency with a bounded task queue
-- keep output event-based instead of printing raw strings first
+Pure classification logic with no side effects.
+
+Responsibilities:
+
+- determine whether GAM output indicates a miss, rate limit error, or successful result
+- keep output classification isolated from execution and formatting
+
+### `GAMResultFormatter`
+
+Pure formatting logic with no side effects.
+
+Responsibilities:
+
+- format `GAMResult` values into display strings for each action type
+- format preview command lines
+- format CSV row descriptions for review output
 
 ### `GAMProcessRunner`
 
@@ -159,22 +200,22 @@ Responsibilities:
 - launch `gam`
 - capture stdout and stderr
 - return exit code and combined output
-- support cancellation
-
-This keeps shell/process code isolated from business logic.
+- support cancellation via `withTaskCancellationHandler` — process is terminated immediately on cancel
 
 ### `GAMCommandBuilder`
 
-Builds the exact commands now assembled in Python.
+Builds the exact commands for the selected workflow.
 
 Examples:
 
 - preview/check: `gam user <acct> delete messages query rfc822msgid:<id>`
 - execute: same command plus `doit`
+- suspend preview/execute: `gam update user <acct> suspended on`
+- suspend check: `gam info user <acct>`
 
 ### `GAMLocator`
 
-Native version of the existing detection logic.
+Finds the `gam` executable.
 
 Responsibilities:
 
@@ -184,13 +225,7 @@ Responsibilities:
 
 ### `OutputStore`
 
-Single place that receives structured events and formats them for the output pane.
-
-Responsibilities:
-
-- append log lines on the main actor
-- preserve current status summary style
-- make it easy to later support richer UI tables without losing plain-text output
+Observable output accumulator available for future UI extensions.
 
 ## Data Flow
 
@@ -200,43 +235,6 @@ Responsibilities:
 4. `NativeDeleteEngine` converts valid rows into `[GAMTask]`.
 5. For preview/check/execute, `GAMCommandBuilder` builds commands.
 6. `GAMProcessRunner` executes `gam` with bounded concurrency.
-7. Engine classifies results into `GAMResult`.
-8. `OutputStore` formats events into the visible log.
-
-## Migration Plan
-
-### Phase 1
-
-Port review and preview mode only.
-
-Why first:
-
-- no destructive behavior
-- no `gam` dependency required for preview
-- validates CSV parsing and log formatting
-
-### Phase 2
-
-Port `gam` lookup, version check, and test setup actions.
-
-### Phase 3
-
-Port check mode with first-10 behavior and output classification.
-
-### Phase 4
-
-Port execute mode, retries, backoff, and cancellation.
-
-### Phase 5
-
-Match the current UX closely enough to swap the production app over.
-
-## Risk Notes
-
-- The main technical risk is matching the Python output classification logic closely enough that operators trust the new app.
-- Cancellation will need careful handling because `Process` cancellation and worker coordination can drift if we do not centralize ownership.
-- Concurrency should be bounded explicitly; a naive `TaskGroup` could overrun GAM or trigger avoidable rate limiting.
-
-## Recommended Next Step
-
-Continue validating native behavior against the original app until you are comfortable swapping this workspace into the main product path.
+7. `GAMResultClassifier` classifies each result.
+8. `GAMResultFormatter` formats each result into a display string.
+9. `RunnerViewModel` batches and streams output into the UI.
