@@ -11,13 +11,30 @@ struct RootView: View {
                 .font(.title2)
                 .bold()
 
-            Text("macOS app that uses GAM to bulk-delete messages from Google Vault metadata CSV exports, including phishing, spam, and other targeted search results.")
+            Text("macOS app that uses GAM for bulk admin actions, starting with Vault message deletes and CSV-based user suspension.")
                 .foregroundStyle(.secondary)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Bulk Action")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Picker("Bulk Action", selection: $viewModel.action) {
+                    ForEach(BulkAction.allCases) { action in
+                        Text(action.title).tag(action)
+                    }
+                }
+                .pickerStyle(.segmented)
+
+                Text(viewModel.actionDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             HStack(spacing: 8) {
                 Text("CSV")
                     .frame(width: 70, alignment: .leading)
-                TextField("Path to CSV", text: $viewModel.csvPath)
+                TextField(viewModel.action.csvPrompt, text: $viewModel.csvPath)
                     .textFieldStyle(.roundedBorder)
                 Button("Browse") {
                     viewModel.browseCSV()
@@ -46,7 +63,7 @@ struct RootView: View {
             }
 
             if viewModel.modeRequiresGAM && !viewModel.isGAMAvailable {
-                Text("GAM is not currently detected. Check mode and Execute Deletes need a valid GAM install or a GAM_PATH override.")
+                Text("GAM is not currently detected. Check and execute modes need a valid GAM install or a GAM_PATH override.")
                     .font(.caption)
                     .foregroundStyle(.orange)
             } else if !viewModel.detectedGAMPath.isEmpty {
@@ -74,7 +91,7 @@ struct RootView: View {
                             Button {
                                 viewModel.mode = mode
                             } label: {
-                                Text(mode.title)
+                                Text(mode.title(for: viewModel.action))
                                     .foregroundStyle(mode == .execute ? fireEngineRed : .primary)
                                     .frame(maxWidth: .infinity, minHeight: 34)
                                     .padding(.horizontal, 12)
@@ -92,6 +109,12 @@ struct RootView: View {
                         }
                     }
                     .frame(width: 430)
+
+                    if viewModel.showsPasswordChangeToggle {
+                        Toggle("Force password change at next sign-in", isOn: $viewModel.forcePasswordChange)
+                            .toggleStyle(.checkbox)
+                            .padding(.top, 4)
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
@@ -153,7 +176,7 @@ struct RootView: View {
                 .frame(minWidth: 560, idealWidth: 640, maxWidth: 760, minHeight: 360, idealHeight: 440)
         }
         .sheet(isPresented: $viewModel.showingCSVHelp) {
-            CSVHelpView()
+            CSVHelpView(action: viewModel.action)
                 .frame(minWidth: 560, idealWidth: 680, maxWidth: 760, minHeight: 320, idealHeight: 360)
         }
         .onReceive(NotificationCenter.default.publisher(for: .showGAMSetupHelp)) { _ in
@@ -317,12 +340,13 @@ private struct GAMSetupHelpView: View {
 }
 
 private struct CSVHelpView: View {
+    let action: BulkAction
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("CSV File Guidance")
+                Text(action.csvHelpTitle)
                     .font(.title3)
                     .bold()
                 Spacer()
@@ -331,17 +355,16 @@ private struct CSVHelpView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("This file is typically exported from Google Vault.")
+                    Text(helpIntro)
 
                     Text("Recommended workflow:")
                         .font(.headline)
 
-                    Text("1. Search in Google Vault for the subject line or other details that match the specific day you need.")
-                    Text("2. Once you find the matching emails, export them as MBOX.")
-                    Text("3. From the downloaded export files, use the file that ends with `-metadata.csv`.")
-                    Text("4. Review the file with Review CSV, Preview Commands, and Check (first 10) before executing deletes.")
+                    ForEach(helpSteps, id: \.self) { step in
+                        Text(step)
+                    }
 
-                    Text("The app expects the Vault metadata CSV so it can read the `Account` and `Rfc822MessageId` fields correctly.")
+                    Text(helpFooter)
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -359,6 +382,65 @@ private struct CSVHelpView: View {
             }
         }
         .padding(20)
+    }
+
+    private var helpIntro: String {
+        switch action {
+        case .deleteVaultMessages:
+            return "This file is typically exported from Google Vault."
+        case .suspendUsersCSV:
+            return "This file can be any UTF-8 CSV that lists the users you want to suspend."
+        case .archiveUsersCSV:
+            return "This file can be any UTF-8 CSV that lists the users you want to archive."
+        case .changePasswordsCSV:
+            return "This file can be any UTF-8 CSV that lists the users whose passwords you want to change."
+        }
+    }
+
+    private var helpSteps: [String] {
+        switch action {
+        case .deleteVaultMessages:
+            return [
+                "1. Search in Google Vault for the subject line or other details that match the specific day you need.",
+                "2. Once you find the matching emails, export them as MBOX.",
+                "3. From the downloaded export files, use the file that ends with `-metadata.csv`.",
+                "4. Review the file with Review CSV, Preview Commands, and Check (first 10) before executing deletes."
+            ]
+        case .suspendUsersCSV:
+            return [
+                "1. Prepare a CSV with one user identifier column such as `Account`, `User`, `Email`, or `Primary Email`.",
+                "2. Review the CSV first so blank or malformed rows are easy to catch.",
+                "3. Use Preview Commands to inspect the exact `gam update user ... suspended on` command.",
+                "4. Use Check (first 10) to verify the first set of users with `gam info user` before executing suspends."
+            ]
+        case .archiveUsersCSV:
+            return [
+                "1. Prepare a CSV with one user identifier column such as `Account`, `User`, `Email`, or `Primary Email`.",
+                "2. Review the CSV first so blank or malformed rows are easy to catch.",
+                "3. Use Preview Commands to inspect the exact `gam update user ... archived on` command.",
+                "4. Use Check (first 10) to verify the first set of users with `gam info user` before executing archives."
+            ]
+        case .changePasswordsCSV:
+            return [
+                "1. Prepare a CSV with a user column such as `Account`, `User`, `Email`, or `Primary Email` plus a `Password` column.",
+                "2. Review the CSV first so blank users or blank passwords are easy to catch.",
+                "3. Use Preview Commands to inspect the exact command shape; the output redacts passwords for safety.",
+                "4. Use Check (first 10) to verify the first set of users with `gam info user` before executing password changes."
+            ]
+        }
+    }
+
+    private var helpFooter: String {
+        switch action {
+        case .deleteVaultMessages:
+            return "The app expects the Vault metadata CSV so it can read the `Account` and `Rfc822MessageId` fields correctly."
+        case .suspendUsersCSV:
+            return "The suspend workflow only requires a user-identifying column. Extra columns are fine and remain visible in Review CSV output."
+        case .archiveUsersCSV:
+            return "The archive workflow only requires a user-identifying column. Extra columns are fine and remain visible in Review CSV output."
+        case .changePasswordsCSV:
+            return "The password workflow requires both a user column and a `Password` column. Preview output redacts the password value, but execute still uses the CSV value."
+        }
     }
 }
 
