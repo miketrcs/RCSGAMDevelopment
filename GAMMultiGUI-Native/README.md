@@ -4,9 +4,23 @@ This folder contains `GAMIT Native`, the native-only macOS app that uses GAM for
 
 ## Version
 
-- Current version: `1.5.5`
+- Current version: `1.5.6`
 
 The original `GAMMultiGUI` app remains in `/Users/mike/All Development/RCSGAMDevelopment/GAMMultiGUI`. This folder is the native app workspace.
+
+## Changelog
+
+### v1.5.6
+- Execute mode now shows a live progress bar and percentage (0–100%) in the status row as tasks complete
+- Log output auto-scrolls to the bottom during Execute mode runs
+
+### v1.5.5
+- Performance: batch output flushes reduce string copy overhead during large runs
+- Performance: 2 MB display cap on output pane; Save Output always writes the complete log
+- Code quality: GAMResultClassifier and GAMResultFormatter extracted from NativeDeleteEngine for cleaner separation of concerns
+- Fix: CancellationError now correctly propagates through retry logic — cancelling mid-retry no longer shows as an exception in output
+- Fix: CSV loader redundant UTF-8 fallback removed; misleading inout parameter cleaned up
+- Adds archive users and change passwords CSV workflows to the bulk action picker
 
 ## Goal
 
@@ -65,8 +79,8 @@ export NOTARY_PROFILE=YOUR_NOTARY_PROFILE
 Default output:
 
 - `dist/GAMIT.app`: universal macOS app bundle
-- `dist/GAMIT-1.5.5.pkg`: macOS installer package for `/Applications`
-- `dist/GAMIT-1.5.5.pkg.sha256`: SHA-256 checksum file for the installer package
+- `dist/GAMIT-1.5.6.pkg`: macOS installer package for `/Applications`
+- `dist/GAMIT-1.5.6.pkg.sha256`: SHA-256 checksum file for the installer package
 
 Default app metadata:
 

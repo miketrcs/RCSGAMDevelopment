@@ -147,13 +147,24 @@ struct RootView: View {
                 }
 
                 Spacer()
+
+                if let progress = viewModel.progress {
+                    ProgressView(value: progress)
+                        .frame(width: 120)
+                    Text("\(Int(progress * 100))%")
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                        .frame(width: 36, alignment: .trailing)
+                }
+
                 Text("Status: \(viewModel.status)")
                     .foregroundStyle(viewModel.isRunning ? .orange : .secondary)
             }
 
             OutputTextView(
                 text: viewModel.output.isEmpty ? "Output will appear here..." : viewModel.output,
-                isPlaceholder: viewModel.output.isEmpty
+                isPlaceholder: viewModel.output.isEmpty,
+                autoScroll: viewModel.isRunning && viewModel.mode == .execute
             )
             .background(
                 RoundedRectangle(cornerRadius: 8)
@@ -207,6 +218,7 @@ struct RootView: View {
 private struct OutputTextView: NSViewRepresentable {
     let text: String
     let isPlaceholder: Bool
+    let autoScroll: Bool
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSScrollView()
@@ -235,10 +247,14 @@ private struct OutputTextView: NSViewRepresentable {
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? NSTextView else { return }
-        if textView.string != text {
+        let textChanged = textView.string != text
+        if textChanged {
             textView.string = text
         }
         textView.textColor = isPlaceholder ? .secondaryLabelColor : .labelColor
+        if autoScroll && textChanged {
+            textView.scrollRangeToVisible(NSRange(location: textView.string.utf16.count, length: 0))
+        }
     }
 }
 

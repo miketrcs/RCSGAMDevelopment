@@ -14,6 +14,7 @@ final class RunnerViewModel: ObservableObject {
     @Published var status = "Ready"
     @Published var output = ""
     @Published var isRunning = false
+    @Published var progress: Double? = nil
     @Published var detectedGAMPath = ""
     @Published var showingGAMSetupHelp = false
     @Published var showingCSVHelp = false
@@ -111,6 +112,7 @@ final class RunnerViewModel: ObservableObject {
         )
 
         isRunning = true
+        progress = mode == .execute ? 0.0 : nil
         output = ""
         allLines = []
         refreshGAMPath()
@@ -123,15 +125,20 @@ final class RunnerViewModel: ObservableObject {
         }
 
         let engine = self.engine
+        let progressCallback: (@Sendable (Double) async -> Void)? = mode == .execute
+            ? { @Sendable (pct: Double) in await MainActor.run { self.progress = pct } }
+            : nil
+
         currentTask = Task.detached(priority: .userInitiated) {
             do {
-                try await engine.run(config: config) { line in
-                    await MainActor.run {
-                        self.appendOutput(line)
-                    }
-                }
+                try await engine.run(
+                    config: config,
+                    emitLine: { line in await MainActor.run { self.appendOutput(line) } },
+                    progressUpdate: progressCallback
+                )
                 await MainActor.run {
                     self.flushPendingOutput()
+                    self.progress = nil
                     self.status = Task.isCancelled ? "Cancelled" : "Completed"
                     self.isRunning = false
                     self.currentTask = nil
@@ -139,6 +146,7 @@ final class RunnerViewModel: ObservableObject {
             } catch AppError.cancelled {
                 await MainActor.run {
                     self.flushPendingOutput()
+                    self.progress = nil
                     self.appendOutput("[INFO] Operation cancelled.")
                     self.status = "Cancelled"
                     self.isRunning = false
@@ -147,6 +155,7 @@ final class RunnerViewModel: ObservableObject {
             } catch {
                 await MainActor.run {
                     self.flushPendingOutput()
+                    self.progress = nil
                     self.appendOutput("[ERR] \(error.localizedDescription)")
                     self.status = "Failed"
                     self.isRunning = false

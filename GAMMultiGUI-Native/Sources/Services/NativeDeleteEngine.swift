@@ -32,7 +32,8 @@ struct NativeDeleteEngine {
 
     func run(
         config: RunnerConfig,
-        emitLine: @escaping @Sendable (String) async -> Void
+        emitLine: @escaping @Sendable (String) async -> Void,
+        progressUpdate: (@Sendable (Double) async -> Void)? = nil
     ) async throws {
         let rows = try csvLoader.loadRows(from: config.csvPath, for: config.action)
         try Task.checkCancellation()
@@ -45,7 +46,7 @@ struct NativeDeleteEngine {
         case .check:
             try await formatCheck(rows: rows, config: config, emitLine: emitLine)
         case .execute:
-            try await formatExecute(rows: rows, config: config, emitLine: emitLine)
+            try await formatExecute(rows: rows, config: config, emitLine: emitLine, progressUpdate: progressUpdate)
         }
     }
 
@@ -184,7 +185,8 @@ struct NativeDeleteEngine {
     private func formatExecute(
         rows: [CSVRow],
         config: RunnerConfig,
-        emitLine: @escaping @Sendable (String) async -> Void
+        emitLine: @escaping @Sendable (String) async -> Void,
+        progressUpdate: (@Sendable (Double) async -> Void)? = nil
     ) async throws {
         let gamPath = try resolveGAMPath(override: config.gamPathOverride)
         let tasks = rows
@@ -198,7 +200,8 @@ struct NativeDeleteEngine {
             config: config,
             gamPath: gamPath,
             mode: .execute,
-            emitLine: emitLine
+            emitLine: emitLine,
+            progressUpdate: progressUpdate
         )
 
         let skippedCount = rows.count - tasks.count
@@ -292,13 +295,16 @@ struct NativeDeleteEngine {
         config: RunnerConfig,
         gamPath: String,
         mode: RunnerMode,
-        emitLine: @escaping @Sendable (String) async -> Void
+        emitLine: @escaping @Sendable (String) async -> Void,
+        progressUpdate: (@Sendable (Double) async -> Void)? = nil
     ) async throws -> RunSummary {
         if tasks.isEmpty {
             return RunSummary()
         }
 
         let maxWorkers = max(1, min(config.workers, tasks.count))
+        let totalCount = tasks.count
+        var completedCount = 0
         var iterator = tasks.makeIterator()
         var summary = RunSummary()
 
@@ -321,7 +327,12 @@ struct NativeDeleteEngine {
             while let result = try await group.next() {
                 try Task.checkCancellation()
                 summary.record(result)
+                completedCount += 1
                 await emitLine(formatter.formatResult(result, action: config.action))
+
+                if let progressUpdate {
+                    await progressUpdate(Double(completedCount) / Double(totalCount))
+                }
 
                 if result.status == .error && !result.output.isEmpty {
                     await emitLine(result.output)
