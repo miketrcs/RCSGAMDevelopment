@@ -3,13 +3,9 @@
 __pycache__/
 **/__pycache__/
 *.pyc
-GAMMultiGUI/dist/*.pkg
-GAMMultiGUI/dist/*.pkg.sha256
-GAMMultiGUI/dist/*.app
+GAMMultiGUI/dist/
 GAMMultiGUI/GAMMultiGUI 1 2026-02-27 15-55-11/
 GAMMultiGUI-Native/.build/
 GAMMultiGUI-Native/.build-local/
 GAMMultiGUI-Native/.vscode/
-GAMMultiGUI-Native/dist/*.app
-GAMMultiGUI-Native/dist/*.pkg
-GAMMultiGUI-Native/dist/*.pkg.sha256
+GAMMultiGUI-Native/dist/
