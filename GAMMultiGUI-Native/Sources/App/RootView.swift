@@ -14,6 +14,10 @@ struct RootView: View {
             Text("macOS app that uses GAM for bulk admin actions, starting with Vault message deletes and CSV-based user suspension.")
                 .foregroundStyle(.secondary)
 
+            Text("github.com/miketrcs")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+
             VStack(alignment: .leading, spacing: 6) {
                 Text("Bulk Action")
                     .font(.caption)
