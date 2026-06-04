@@ -18,6 +18,7 @@ final class RunnerViewModel: ObservableObject {
     @Published var detectedGAMPath = ""
     @Published var showingGAMSetupHelp = false
     @Published var showingCSVHelp = false
+    @Published var showingAbout = false
 
     private let engine = NativeDeleteEngine()
     private let gamLocator = GAMLocator()

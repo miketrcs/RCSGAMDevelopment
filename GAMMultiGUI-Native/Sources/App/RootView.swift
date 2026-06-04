@@ -186,6 +186,10 @@ struct RootView: View {
         .onChange(of: viewModel.gamPathOverride) { _ in
             viewModel.refreshGAMPath()
         }
+        .sheet(isPresented: $viewModel.showingAbout) {
+            AboutView()
+                .frame(width: 360, height: 220)
+        }
         .sheet(isPresented: $viewModel.showingGAMSetupHelp) {
             GAMSetupHelpView()
                 .frame(minWidth: 560, idealWidth: 640, maxWidth: 760, minHeight: 360, idealHeight: 440)
@@ -193,6 +197,9 @@ struct RootView: View {
         .sheet(isPresented: $viewModel.showingCSVHelp) {
             CSVHelpView(action: viewModel.action)
                 .frame(minWidth: 560, idealWidth: 680, maxWidth: 760, minHeight: 320, idealHeight: 360)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .showAbout)) { _ in
+            viewModel.showingAbout = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .showGAMSetupHelp)) { _ in
             viewModel.showingGAMSetupHelp = true
@@ -489,5 +496,48 @@ private struct HelpInlineLink: View {
             .font(.system(.body, design: .monospaced))
             .textSelection(.enabled)
             .foregroundStyle(Color.accentColor)
+    }
+}
+
+private struct AboutView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    private var version: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+    }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            if let icon = NSImage(named: "AppIcon") {
+                Image(nsImage: icon)
+                    .resizable()
+                    .frame(width: 64, height: 64)
+            }
+
+            VStack(spacing: 4) {
+                Text("GAMIT")
+                    .font(.title2)
+                    .bold()
+                if !version.isEmpty {
+                    Text("Version \(version)")
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            VStack(spacing: 2) {
+                Text("By miketrcs")
+                    .foregroundStyle(.secondary)
+                Text(verbatim: "github.com/miketrcs")
+                    .font(.system(.body, design: .monospaced))
+                    .foregroundStyle(Color.accentColor)
+                    .textSelection(.enabled)
+            }
+
+            Button("Close") {
+                dismiss()
+            }
+            .keyboardShortcut(.cancelAction)
+        }
+        .padding(24)
     }
 }
