@@ -4,11 +4,20 @@ This folder contains `GAMIT Native`, the native-only macOS app that uses GAM for
 
 ## Version
 
-- Current version: `1.5.7`
+- Current version: `1.5.10`
 
 The original `GAMMultiGUI` app remains in `/Users/mike/All Development/RCSGAMDevelopment/GAMMultiGUI`. This folder is the native app workspace.
 
 ## Changelog
+
+### v1.5.10
+- Recompiled against Xcode 26.6 / SDK 26.6 (Swift 6.3.3); no functional changes
+
+### v1.5.9
+- Custom About panel with app icon, version, and GitHub username
+
+### v1.5.8
+- Add GitHub username to app header
 
 ### v1.5.7
 - Recompiled against Xcode 26.5 / SDK 26.5 (Swift 6.3.2); no functional changes
@@ -82,8 +91,8 @@ export NOTARY_PROFILE=YOUR_NOTARY_PROFILE
 Default output:
 
 - `dist/GAMIT.app`: universal macOS app bundle
-- `dist/GAMIT-1.5.7.pkg`: macOS installer package for `/Applications`
-- `dist/GAMIT-1.5.7.pkg.sha256`: SHA-256 checksum file for the installer package
+- `dist/GAMIT-1.5.10.pkg`: macOS installer package for `/Applications`
+- `dist/GAMIT-1.5.10.pkg.sha256`: SHA-256 checksum file for the installer package
 
 Default app metadata:
 
